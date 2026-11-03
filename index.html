@@ -4,502 +4,354 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>261121 幻營旅團 露營計畫</title>
-  
-  <!-- Tailwind CSS 樣式庫 -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Vue 3 核心庫 (瀏覽器直接原生執行，100% 不會噴 import 錯誤) -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --primary-light: #ecfdf5;
+      --stone-50: #fafaf9;
+      --stone-100: #f5f5f4;
+      --stone-200: #e7e5e4;
+      --stone-300: #d6d3d1;
+      --stone-500: #78716c;
+      --stone-700: #44403c;
+      --stone-800: #292524;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--stone-50);
+      color: var(--stone-800);
+      line-height: 1.5;
+    }
+
+    /* 佈局容器 */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    /* 頂部 Header (手機版) */
+    .mobile-header {
+      background: white;
+      border-bottom: 1px solid var(--stone-200);
+      padding: 1rem;
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--primary-dark);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    /* 側邊導覽 (電腦版) */
+    .sidebar {
+      display: none;
+      width: 250px;
+      background: white;
+      border-right: 1px solid var(--stone-200);
+      position: fixed;
+      height: 100vh;
+      padding: 1.5rem 1rem;
+      z-index: 40;
+    }
+    .sidebar-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 0.25rem;
+    }
+    .sidebar-sub {
+      font-size: 0.75rem;
+      color: var(--stone-500);
+      letter-spacing: 0.05em;
+      margin-bottom: 2rem;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: none;
+      background: none;
+      color: var(--stone-700);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      margin-bottom: 0.35rem;
+    }
+    .nav-btn:hover { background-color: var(--stone-100); }
+    .nav-btn.active {
+      background-color: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    /* 內容主體區 */
+    .main-content {
+      flex: 1;
+      padding: 1rem;
+      padding-bottom: 5rem;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* 手機底部導覽列 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: white;
+      border-top: 1px solid var(--stone-200);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.25rem;
+      z-index: 50;
+    }
+    .bottom-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: none;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--stone-500);
+      cursor: pointer;
+      gap: 2px;
+    }
+    .bottom-btn.active {
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+    .bottom-btn span:first-child { font-size: 1.25rem; }
+
+    /* 通用元件 */
+    .card {
+      background: white;
+      border: 1px solid var(--stone-200);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .info-row {
+      display: flex;
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+    }
+    .info-label {
+      font-weight: 700;
+      color: var(--stone-500);
+      min-width: 70px;
+    }
+
+    /* 提醒與試算框 */
+    .alert-box {
+      background-color: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: 0.75rem;
+      padding: 0.85rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #92400e;
+    }
+    .cost-box {
+      background-color: var(--primary-light);
+      border: 1px solid #a7f3d0;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--primary-dark);
+    }
+    .cost-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #6ee7b7;
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+
+    /* 表格 */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 0.75rem;
+      border: 1px solid var(--stone-200);
+      margin-top: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+      min-width: 480px;
+    }
+    th, td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--stone-200);
+    }
+    th { background: var(--stone-100); color: var(--stone-500); font-weight: 700; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    /* 折疊清單與手風琴 */
+    .accordion {
+      border: 1px solid var(--stone-200);
+      border-radius: 0.75rem;
+      margin-bottom: 0.75rem;
+      background: white;
+      overflow: hidden;
+    }
+    .accordion-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      background: var(--stone-50);
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--stone-800);
+      text-align: left;
+    }
+    .accordion-header:hover { background: var(--stone-100); }
+    .accordion-body {
+      display: none;
+      padding: 0.85rem 1rem;
+      border-top: 1px solid var(--stone-200);
+      background: white;
+    }
+    .accordion.open .accordion-body { display: block; }
+    .accordion-indicator { font-size: 0.75rem; color: var(--stone-500); }
+
+    /* 輸入框 */
+    .input-field {
+      width: 100%;
+      border: 1px solid var(--stone-300);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .input-field:focus { border-color: var(--primary); }
+
+    /* Check list 項目 */
+    .check-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--stone-100);
+    }
+    .check-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .check-label input { width: 1.1rem; height: 1.1rem; cursor: pointer; }
+    .check-label.checked span { text-decoration: line-through; color: var(--stone-500); }
+
+    /* 響應式佈局調整 */
+    @media (min-width: 768px) {
+      .mobile-header { display: none; }
+      .sidebar { display: flex; flex-direction: column; }
+      .bottom-nav { display: none; }
+      .main-content { margin-left: 250px; padding: 2rem; }
+      .check-item {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .check-remark { width: 220px; }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    }
   </style>
 </head>
-<body class="bg-stone-100 text-stone-800 min-h-screen">
-  <div id="app">
-    <div class="min-h-screen flex flex-col md:flex-row">
-      
-      <!-- 電腦版側邊導覽列 -->
-      <aside class="hidden md:flex flex-col w-64 bg-white border-r border-stone-200 fixed h-full z-20">
-        <div class="p-6 border-b border-stone-100">
-          <h1 class="text-xl font-black text-emerald-800 flex items-center gap-2">
-            <span>⛺</span> 幻營旅團
-          </h1>
-          <p class="text-xs text-stone-400 mt-1 font-semibold tracking-wider">CAMPING PLANNER</p>
+<body>
+
+  <div class="app-container">
+    <div class="mobile-header">⛺ 261121 幻營旅團</div>
+
+    <!-- 電腦側邊欄 -->
+    <aside class="sidebar">
+      <div class="sidebar-title">⛺ 幻營旅團</div>
+      <div class="sidebar-sub">CAMPING PLANNER</div>
+      <button class="nav-btn active" onclick="switchTab('info')">📍 露營區資訊</button>
+      <button class="nav-btn" onclick="switchTab('partners')">👥 夥伴資訊</button>
+      <button class="nav-btn" onclick="switchTab('rental')">⛺ 設備租借</button>
+      <button class="nav-btn" onclick="switchTab('menu')">🍲 飲食清單</button>
+      <button class="nav-btn" onclick="switchTab('checklist')">✅ Check list</button>
+    </aside>
+
+    <!-- 主內容區塊 -->
+    <main class="main-content">
+
+      <!-- 1. 露營區資訊 -->
+      <section id="tab-info" class="tab-pane">
+        <h2 class="section-title">📍 露營區資訊</h2>
+        <div class="card">
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 0.75rem;">
+            愛露營 露野森林
+          </h3>
+          <div class="info-row"><span class="info-label">📅 時間：</span><span>2026/11/21 ~ 2026/11/22</span></div>
+          <div class="info-row"><span class="info-label">📍 地址：</span><span>546 南投縣仁愛鄉春陽村</span></div>
+          <div class="info-row"><span class="info-label">📞 電話：</span><span>0939 646 963 (營區內聯絡：0911 570 827 找營主媽媽)</span></div>
+          <div class="info-row"><span class="info-label">🚗 停車：</span><span>一個晚上酌收 200 元費用</span></div>
+          <div class="info-row"><span class="info-label">🧊 設備：</span><span>VIP區配有獨立冰箱</span></div>
+          
+          <div class="alert-box">
+            <strong>⚠️ 營區生活公約（請務必詳讀）</strong><br>
+            山上跳電維修不易，營區內禁止使用發電機及高容量電器用品（如電磁爐、暖爐、冰箱、烤箱、高分貝音響等）。焚火台、爐具嚴禁於地面直接生火，請架高至少離地 50 公分以上。垃圾請確實做好分類並打包好放置集中處。
+          </div>
+
+          <div class="cost-box">
+            <strong>🪙 費用試算（皆以 8 人計算）</strong><br>
+            • 設備租借（露海空基本配備）：NT$ 1,043 / 人<br>
+            • VIP 區營位費用：總計 NT$ 2,652，約 NT$ 332 / 人
+            <div class="cost-total">
+              <span>每人平均 TOTAL</span>
+              <span>NT$ 1,375</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <p style="font-size: 0.85rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.5rem;">營地平面圖與地圖配置</p>
+            <div class="grid-2">
+              <img src="image%201.jpg" alt="VIP區平面配置圖" style="width:100%; border-radius: 0.5rem; border:1px solid var(--stone-200);" onerror="this.src='image 1.png'; this.onerror=null;">
+              <img src="image.jpg" alt="營區地圖" style="width:100%; border-radius: 0.5rem; border:1px solid var(--stone-200);" onerror="this.src='image.png'; this.onerror=null;">
+            </div>
+          </div>
         </div>
-        <nav class="flex-1 p-4 space-y-1">
-          <button 
-            v-for="item in navItems" 
-            :key="item.id"
-            @click="activeTab = item.id"
-            :class="[
-              'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all',
-              activeTab === item.id ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-            ]"
-          >
-            <span class="text-lg">{{ item.icon }}</span>
-            {{ item.label }}
-          </button>
-        </nav>
-      </aside>
+      </section>
 
-      <!-- 手機版底部導覽列 -->
-      <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-stone-200 flex justify-around p-2 pb-safe z-50 shadow-lg">
-        <button 
-          v-for="item in navItems" 
-          :key="item.id"
-          @click="activeTab = item.id"
-          class="flex flex-col items-center p-2 rounded-xl min-w-[4rem] relative"
-        >
-          <span class="text-xl mb-1">{{ item.icon }}</span>
-          <span :class="['text-[11px] font-bold', activeTab === item.id ? 'text-emerald-700' : 'text-stone-500']">{{ item.label }}</span>
-          <div v-if="activeTab === item.id" class="absolute top-0 w-8 h-1 bg-emerald-600 rounded-b-full"></div>
-        </button>
-      </nav>
-
-      <!-- 主要內容區 -->
-      <main class="flex-1 md:ml-64 pb-24 md:pb-12">
-        <header class="md:hidden bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-stone-200 p-4 flex items-center justify-center">
-          <h1 class="text-lg font-black text-emerald-800 flex items-center gap-2">
-            <span>⛺</span> 261121 幻營旅團
-          </h1>
-        </header>
-
-        <div class="max-w-4xl mx-auto p-4 md:p-8">
-
-          <!-- 1. 露營區資訊 -->
-          <section v-if="activeTab === 'info'" class="space-y-6">
-            <h2 class="text-2xl font-bold text-stone-800 flex items-center gap-2">
-              <span>📍</span> 露營區資訊
-            </h2>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-4">
-                <h3 class="text-xl font-bold text-emerald-800">{{ campingInfo.name }}</h3>
-                <a :href="campingInfo.fbLink" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full font-medium hover:bg-blue-100 transition-colors">
-                  Facebook 粉專 ↗
-                </a>
-              </div>
-
-              <div class="space-y-3 text-stone-600 text-sm">
-                <div class="flex items-start gap-3">
-                  <span class="font-bold text-stone-400">📅 時間：</span>
-                  <span class="font-semibold text-stone-700">{{ campingInfo.time }}</span>
-                </div>
-                <div class="flex items-start gap-3">
-                  <span class="font-bold text-stone-400">📍 地址：</span>
-                  <span>{{ campingInfo.address }}</span>
-                </div>
-                <div class="flex items-start gap-3">
-                  <span class="font-bold text-stone-400">📞 電話：</span>
-                  <span>{{ campingInfo.phone }}</span>
-                </div>
-                <div class="flex items-start gap-3">
-                  <span class="font-bold text-stone-400">🚗 停車：</span>
-                  <span>{{ campingInfo.parking }}</span>
-                </div>
-                <div class="flex items-start gap-3">
-                  <span class="font-bold text-stone-400">🧊 設備：</span>
-                  <span class="text-emerald-700 font-medium">{{ campingInfo.fridge }}</span>
-                </div>
-              </div>
-
-              <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-sm text-amber-900 space-y-2">
-                <div class="font-bold flex items-center gap-1.5 text-amber-800">
-                  <span>⚠️</span> 營區生活公約（請務必詳讀）
-                </div>
-                <p class="leading-relaxed text-xs md:text-sm text-stone-600">{{ campingInfo.rules }}</p>
-                <a :href="campingInfo.rulesLink" target="_blank" class="inline-block text-xs text-amber-800 underline font-medium hover:text-amber-900 mt-1">
-                  點此查看營區官方公告貼文 ↗
-                </a>
-              </div>
-
-              <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-sm">
-                <div class="font-bold text-emerald-900 mb-2">費用試算（以 8 人計算）</div>
-                <div class="text-xs md:text-sm text-emerald-800 space-y-1">
-                  <p>• 設備租借（露海空基本配備）：NT$ 1,043 / 人</p>
-                  <p>• VIP 區營位費用：總計 NT$ 2,652，約 NT$ 332 / 人</p>
-                </div>
-                <div class="mt-3 pt-3 border-t border-emerald-200 flex justify-between items-center">
-                  <span class="font-bold text-emerald-900">每人平均總計 (TOTAL)</span>
-                  <span class="text-xl font-black text-emerald-700">NT$ 1,375</span>
-                </div>
-              </div>
-
-              <!-- 營區圖片展示 -->
-              <div class="pt-4 border-t border-stone-100 space-y-4">
-                <h4 class="font-bold text-sm text-stone-700">營地平面與地圖配置</h4>
-                <div class="grid md:grid-cols-2 gap-4">
-                  <div class="space-y-1">
-                    <span class="text-xs text-stone-400">VIP區平面配置圖</span>
-                    <img src="./image%201.jpg" alt="VIP區平面配置圖" class="w-full rounded-xl border border-stone-200 shadow-sm" onerror="this.onerror=null; this.src='image 1.png';">
-                  </div>
-                  <div class="space-y-1">
-                    <span class="text-xs text-stone-400">營區全區地圖</span>
-                    <img src="./image.jpg" alt="營區全區地圖" class="w-full rounded-xl border border-stone-200 shadow-sm" onerror="this.onerror=null; this.src='image.png';">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 2. 夥伴資訊 -->
-          <section v-if="activeTab === 'partners'" class="space-y-6">
-            <h2 class="text-2xl font-bold text-stone-800 flex items-center gap-2">
-              <span>👥</span> 帳篷分組與夥伴
-            </h2>
-
-            <div class="grid md:grid-cols-2 gap-6">
-              <div v-for="tent in tents" :key="tent.id" class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-                <div class="bg-stone-50 px-6 py-4 border-b border-stone-200 flex items-center justify-between">
-                  <h3 class="font-bold text-stone-800">{{ tent.name }}</h3>
-                  <span class="text-xs bg-stone-200 text-stone-700 px-2.5 py-1 rounded-full font-medium">4 人</span>
-                </div>
-                <div class="p-4 divide-y divide-stone-100">
-                  <div v-for="(member, idx) in tent.members" :key="idx" class="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
-                        {{ member.name.charAt(0) }}
-                      </div>
-                      <div>
-                        <div class="font-bold text-stone-800 text-sm">{{ member.name }}</div>
-                        <span class="text-[11px] text-stone-400">{{ member.group }}</span>
-                      </div>
-                    </div>
-                    <div class="text-xs text-stone-600 bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-100 font-mono">
-                      {{ member.phone }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 3. 露營設備租借 -->
-          <section v-if="activeTab === 'rental'" class="space-y-6">
-            <h2 class="text-2xl font-bold text-stone-800 flex items-center gap-2">
-              <span>⛺</span> 露營設備租借
-            </h2>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 space-y-6">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 class="font-bold text-lg text-stone-800">租借店家：露海空</h3>
-                  <p class="text-xs text-stone-500 mt-0.5">領取與歸還注意事項請依照店家預約規定</p>
-                </div>
-                <div class="flex gap-2">
-                  <a href="https://luhaikong.com.tw/contents-2-3.html" target="_blank" class="text-xs bg-stone-100 text-stone-700 hover:bg-stone-200 font-medium px-3 py-2 rounded-lg transition-colors">
-                    店家官網 ↗
-                  </a>
-                  <a href="https://mapsbooking.ezpretty.com.tw/ezpretty/aio#/4bd5898dcfb887352879e5caead18561" target="_blank" class="text-xs bg-emerald-600 text-white hover:bg-emerald-700 font-medium px-3 py-2 rounded-lg transition-colors">
-                    預約清單 ↗
-                  </a>
-                </div>
-              </div>
-
-              <div class="overflow-x-auto rounded-xl border border-stone-200">
-                <table class="w-full text-left border-collapse min-w-[500px] text-sm">
-                  <thead>
-                    <tr class="bg-stone-50 border-b border-stone-200 text-stone-500 text-xs">
-                      <th class="py-3 px-4 font-bold">品項</th>
-                      <th class="py-3 px-4 font-bold text-center">數量</th>
-                      <th class="py-3 px-4 font-bold text-right">單價</th>
-                      <th class="py-3 px-4 font-bold text-right">加總</th>
-                      <th class="py-3 px-4 font-bold text-right text-emerald-700">均分/人</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-stone-100">
-                    <tr v-for="item in rentalItems" :key="item.id" class="hover:bg-stone-50/50">
-                      <td class="py-3 px-4 font-medium text-stone-800">{{ item.name }}</td>
-                      <td class="py-3 px-4 text-center text-stone-600 font-mono">{{ item.qty }}</td>
-                      <td class="py-3 px-4 text-right text-stone-500 font-mono">${{ item.price }}</td>
-                      <td class="py-3 px-4 text-right font-semibold text-stone-800 font-mono">${{ item.total }}</td>
-                      <td class="py-3 px-4 text-right font-bold text-emerald-700 font-mono">${{ item.avg }}</td>
-                    </tr>
-                    <tr class="bg-emerald-50/40 font-bold border-t-2 border-stone-200">
-                      <td colspan="3" class="py-4 px-4 text-stone-800">總計 (Total)</td>
-                      <td class="py-4 px-4 text-right text-stone-900 font-mono text-base">$7,540</td>
-                      <td class="py-4 px-4 text-right text-emerald-700 font-mono text-base">$1,049</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- 4. 飲食清單 -->
-          <section v-if="activeTab === 'menu'" class="space-y-6">
-            <div>
-              <h2 class="text-2xl font-bold text-stone-800 flex items-center gap-2">
-                <span>🍲</span> 飲食清單
-              </h2>
-              <p class="text-xs text-stone-500 mt-1">點擊菜單展開，可自行記錄該料理所需食材與準備項目（資料會自動保存在您的瀏覽器中）。</p>
-            </div>
-
-            <div class="space-y-4">
-              <div 
-                v-for="meal in menuData" 
-                :key="meal.id"
-                class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden"
-              >
-                <button 
-                  @click="toggleMeal(meal.id)"
-                  class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
-                >
-                  <span class="font-bold text-stone-800 text-base flex items-center gap-2">
-                    <span class="text-emerald-700">✦</span> {{ meal.title }}
-                  </span>
-                  <span class="text-stone-400 text-sm font-bold">{{ isMealOpen(meal.id) ? '▲ 收合' : '▼ 展開' }}</span>
-                </button>
-
-                <!-- 展開內容 -->
-                <div v-if="isMealOpen(meal.id)" class="p-5 border-t border-stone-100 bg-stone-50/50 space-y-4">
-                  <!-- 幻營辦桌大宴 7 大項 -->
-                  <div v-if="meal.type === 'list'" class="space-y-3">
-                    <div 
-                      v-for="(dish, idx) in meal.items" 
-                      :key="idx"
-                      class="bg-white p-3.5 rounded-xl border border-stone-200/80 shadow-xs space-y-2"
-                    >
-                      <div class="font-bold text-emerald-900 text-sm">{{ dish }}</div>
-                      <input 
-                        type="text" 
-                        v-model="savedData[`${meal.id}_${idx}`]" 
-                        @input="saveLocalStorage"
-                        placeholder="點此記錄所需食材、分配購買人..." 
-                        class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- 其餘菜單 (食材 / 調味料 / 其他) 或酒水 -->
-                  <div v-else class="grid md:grid-cols-3 gap-3">
-                    <div 
-                      v-for="(field, idx) in meal.fields" 
-                      :key="idx"
-                      class="bg-white p-3.5 rounded-xl border border-stone-200/80 shadow-xs space-y-1.5"
-                    >
-                      <label class="font-bold text-stone-600 text-xs block">{{ field }}</label>
-                      <input 
-                        type="text" 
-                        v-model="savedData[`${meal.id}_${field}`]" 
-                        @input="saveLocalStorage"
-                        :placeholder="'填寫' + field + '...'" 
-                        class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 5. Check List -->
-          <section v-if="activeTab === 'checklist'" class="space-y-6">
-            <div>
-              <h2 class="text-2xl font-bold text-stone-800 flex items-center gap-2">
-                <span>✅</span> 裝備 Check list
-              </h2>
-              <p class="text-xs text-stone-500 mt-1">細項已預設收合。點擊分類展開，可勾選確認並在右側輸入自訂備註（例如：誰攜帶、租借*2 等）。</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-4 items-start">
-              <div 
-                v-for="cat in checklistCategories" 
-                :key="cat.id"
-                class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden"
-              >
-                <!-- 分類標頭（可折疊） -->
-                <button 
-                  @click="toggleChecklist(cat.id)"
-                  class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
-                >
-                  <span class="font-bold text-stone-800 text-sm md:text-base">{{ cat.title }}</span>
-                  <span class="text-stone-400 text-xs font-bold">{{ isChecklistOpen(cat.id) ? '▲ 收合' : '▼ 展開' }}</span>
-                </button>
-
-                <!-- 細項清單 -->
-                <div v-if="isChecklistOpen(cat.id)" class="p-3 border-t border-stone-100 bg-stone-50/30 divide-y divide-stone-100">
-                  <div 
-                    v-for="item in cat.items" 
-                    :key="item.id"
-                    class="py-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                  >
-                    <!-- 勾選框與名稱 -->
-                    <label class="flex items-center gap-2.5 cursor-pointer flex-1 select-none">
-                      <input 
-                        type="checkbox" 
-                        v-model="savedData[`chk_${item.id}`]"
-                        @change="saveLocalStorage"
-                        class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-stone-300"
-                      />
-                      <span :class="['text-xs md:text-sm font-medium', savedData[`chk_${item.id}`] ? 'line-through text-stone-400' : 'text-stone-700']">
-                        {{ item.name }}
-                      </span>
-                    </label>
-
-                    <!-- 備註欄位 -->
-                    <div class="sm:w-44 pl-6 sm:pl-0">
-                      <input 
-                        type="text" 
-                        v-model="savedData[`remark_${item.id}`]"
-                        @input="saveLocalStorage"
-                        placeholder="備註..." 
-                        class="w-full bg-white border border-stone-200 rounded-md px-2.5 py-1 text-xs text-stone-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <script>
-    const { createApp, ref, reactive, onMounted } = Vue;
-
-    createApp({
-      setup() {
-        const activeTab = ref('info');
-        const openMeals = reactive(new Set());
-        const openChecklists = reactive(new Set());
-        const savedData = reactive({});
-
-        const navItems = [
-          { id: 'info', label: '營區資訊', icon: '📍' },
-          { id: 'partners', label: '夥伴資訊', icon: '👥' },
-          { id: 'rental', label: '設備租借', icon: '⛺' },
-          { id: 'menu', label: '飲食清單', icon: '🍲' },
-          { id: 'checklist', label: 'Check list', icon: '✅' }
-        ];
-
-        const campingInfo = {
-          name: '愛露營 露野森林',
-          fbLink: 'https://www.facebook.com/Yayuz0516/?locale=zh_TW',
-          time: '2026/11/21 ~ 2026/11/22',
-          address: '546 南投縣仁愛鄉春陽村',
-          phone: '0939 646 963 (營區內聯絡：0911 570 827 營主媽媽)',
-          parking: '一個晚上酌收 200 元費用',
-          fridge: 'VIP區配有獨立冰箱',
-          rulesLink: 'https://www.facebook.com/share/p/1J6Ng488GJ/',
-          rules: '山上跳電維修不易，營區內禁止使用發電機及高容量電器用品（如電磁爐、暖爐、冰箱、烤箱、高分貝音響等）。焚火台、爐具嚴禁於地面直接生火，請架高至少離地 50 公分以上。垃圾請確實分類並打包集中。'
-        };
-
-        const tents = [
-          {
-            id: 't1', name: '⛺ 第一帳',
-            members: [
-              { name: '麵包', phone: '0955 141 643', group: '麵包夫妻' },
-              { name: '凱文', phone: 'LINE', group: '麵包夫妻' },
-              { name: '昱', phone: '0955 841 013', group: '昱夫妻' },
-              { name: '軒', phone: '0989 238 346', group: '昱夫妻' }
-            ]
-          },
-          {
-            id: 't2', name: '⛺ 第二帳',
-            members: [
-              { name: 'E慈', phone: '0909 795 125', group: 'E慈夫妻' },
-              { name: '蔡維哲', phone: '0966 166 267', group: 'E慈夫妻' },
-              { name: '毓', phone: '0985 825 695', group: 'ㄩˋㄩˊ' },
-              { name: '魚', phone: '0977 401 875', group: 'ㄩˋㄩˊ' }
-            ]
-          }
-        ];
-
-        const rentalItems = [
-          { id: 1, name: '6-8人帳', qty: 2, price: 1200, total: 2400, avg: 300 },
-          { id: 2, name: '充氣床墊雙人', qty: 3, price: 800, total: 2400, avg: 400 },
-          { id: 3, name: '蛋捲桌', qty: 2, price: 200, total: 400, avg: 50 },
-          { id: 4, name: '動力線', qty: 2, price: 100, total: 200, avg: 25 },
-          { id: 5, name: '燈條', qty: 2, price: 280, total: 560, avg: 70 },
-          { id: 6, name: '客廳帳', qty: 1, price: 680, total: 680, avg: 85 },
-          { id: 7, name: '客廳帳圍布', qty: 1, price: 400, total: 400, avg: 50 },
-          { id: 8, name: '投影組', qty: 1, price: 500, total: 500, avg: 63 },
-          { id: 9, name: '營錘', qty: 1, price: 50, total: 50, avg: 6 }
-        ];
-
-        const menuData = [
-          {
-            id: 'm1', title: '幻營辦桌大宴', type: 'list',
-            items: [
-              '五福臨門烏魚子大拼盤 (烏魚子)',
-              '御品錦繡珍寶海鮮羹 (海鮮羹)',
-              '步步高升櫻花蝦香米糕 (米糕)',
-              '富貴筍絲東坡大封肉 (東坡肉)',
-              '寶島酒家魷魚螺肉蒜鍋 (魷魚螺肉蒜)',
-              '和風花信鮑貝魚卵沙拉 (代鮑+魚卵)',
-              '金雞報喜竹香雙味全雞鍋 (竹香園雞+雞湯)'
-            ]
-          },
-          { id: 'm2', title: '牛排', type: 'fields', fields: ['食材', '調味料', '其他'] },
-          { id: 'm3', title: '墨西哥捲餅(有酪梨+番茄+香菜的那種)', type: 'fields', fields: ['食材', '調味料', '其他'] },
-          { id: 'm4', title: '大阪燒', type: 'fields', fields: ['食材', '調味料', '其他'] },
-          { id: 'm5', title: '關東煮', type: 'fields', fields: ['食材', '調味料', '其他'] },
-          { id: 'm6', title: '酒水', type: 'fields', fields: ['項目'] }
-        ];
-
-        const checklistCategories = [
-          { id: 'c1', title: '📝 準備工作', items: [ { id: 'c1_1', name: '訂營位' }, { id: 'c1_2', name: '租露營設備' }, { id: 'c1_3', name: '食材採買' } ] },
-          { id: 'c2', title: '⛺ 帳篷', items: [ { id: 'c2_1', name: '帳篷' }, { id: 'c2_2', name: '營釘' }, { id: 'c2_3', name: '營柱' }, { id: 'c2_4', name: '營繩' }, { id: 'c2_5', name: '錘子' }, { id: 'c2_6', name: '地布' }, { id: 'c2_7', name: '客廳帳' }, { id: 'c2_8', name: '修補用具' } ] },
-          { id: 'c3', title: '💡 照明', items: [ { id: 'c3_1', name: '營燈' }, { id: 'c3_2', name: '燈條' }, { id: 'c3_3', name: '燈串' }, { id: 'c3_4', name: '動力線' }, { id: 'c3_5', name: '延長線' }, { id: 'c3_6', name: '手電筒' }, { id: 'c3_7', name: '電池 / 充電線' } ] },
-          { id: 'c4', title: '🛏️ 寢具', items: [ { id: 'c4_1', name: '充氣床墊' }, { id: 'c4_2', name: '毛毯 / 被子' }, { id: 'c4_3', name: '枕頭' }, { id: 'c4_4', name: '防潮墊' }, { id: 'c4_5', name: '睡袋' } ] },
-          { id: 'c5', title: '🪑 休憩', items: [ { id: 'c5_1', name: '露營桌' }, { id: 'c5_2', name: '露營椅' } ] },
-          { id: 'c6_s', title: '☀️ 夏日加碼', items: [ { id: 'c6s_1', name: '風扇' }, { id: 'c6s_2', name: '行動冷氣' } ] },
-          { id: 'c6_w', title: '❄️ 冬日加碼', items: [ { id: 'c6w_1', name: '電熱毯' }, { id: 'c6w_2', name: '焚火台 (要離地)' } ] },
-          { id: 'c7', title: '👕 衣著', items: [ { id: 'c7_1', name: '毛巾' }, { id: 'c7_2', name: '換洗衣物' }, { id: 'c7_3', name: '睡衣' }, { id: 'c7_4', name: '帽子' }, { id: 'c7_5', name: '襪子' }, { id: 'c7_6', name: '外套' }, { id: 'c7_7', name: '拖鞋' }, { id: 'c7_8', name: '運動鞋' } ] },
-          { id: 'c8', title: '🔑 出門必需品', items: [ { id: 'c8_1', name: '手機' }, { id: 'c8_2', name: '鑰匙' }, { id: 'c8_3', name: '錢包' }, { id: 'c8_4', name: '充電線' }, { id: 'c8_5', name: '雨具' } ] },
-          { id: 'c9', title: '🍳 烹飪用品', items: [ { id: 'c9_1', name: '烤架' }, { id: 'c9_2', name: '卡式爐' }, { id: 'c9_3', name: '瓦斯罐' }, { id: 'c9_4', name: '湯鍋' }, { id: 'c9_5', name: '平底鍋' }, { id: 'c9_6', name: '木炭' }, { id: 'c9_7', name: '打火機' }, { id: 'c9_8', name: '食用油' }, { id: 'c9_9', name: '隔熱墊' }, { id: 'c9_10', name: '盤子' }, { id: 'c9_11', name: '杯子' }, { id: 'c9_12', name: '餐具' }, { id: 'c9_13', name: '夾鏈袋' }, { id: 'c9_14', name: '鋁箔' }, { id: 'c9_15', name: '保鮮膜' }, { id: 'c9_16', name: '砧板' }, { id: 'c9_17', name: '刀具' }, { id: 'c9_18', name: '開瓶器' }, { id: 'c9_19', name: '餐巾紙' }, { id: 'c9_20', name: '飲料桶' }, { id: 'c9_21', name: '冰桶' } ] },
-          { id: 'c10', title: '🎵 娛樂用品', items: [ { id: 'c10_1', name: '化妝' }, { id: 'c10_2', name: '藍芽喇叭' }, { id: 'c10_3', name: '投影機' }, { id: 'c10_4', name: '快樂的心' } ] },
-          { id: 'c11', title: '🪥 盥洗用品', items: [ { id: 'c11_1', name: '洗髮精' }, { id: 'c11_2', name: '潤髮乳' }, { id: 'c11_3', name: '髮油' }, { id: 'c11_4', name: '沐浴乳' }, { id: 'c11_5', name: '牙刷' }, { id: 'c11_6', name: '牙膏' }, { id: 'c11_7', name: '漱口水' }, { id: 'c11_8', name: '吹風機' }, { id: 'c11_9', name: '衛生棉' } ] },
-          { id: 'c12', title: '🚑 緊急及其他個人用品', items: [ { id: 'c12_1', name: '止痛藥' }, { id: 'c12_2', name: '暈車藥' }, { id: 'c12_3', name: '過敏藥物' }, { id: 'c12_4', name: '健保卡' }, { id: 'c12_5', name: 'OK蹦' }, { id: 'c12_6', name: '紗布' }, { id: 'c12_7', name: '自黏膠帶' }, { id: 'c12_8', name: '棉花棒' }, { id: 'c12_9', name: '溫度計' }, { id: 'c12_10', name: '優碘 / 藥膏' }, { id: 'c12_11', name: '消毒水' }, { id: 'c12_12', name: '75%酒精' } ] },
-          { id: 'c13', title: '🧹 清潔', items: [ { id: 'c13_1', name: '垃圾袋' }, { id: 'c13_2', name: '衛生紙' }, { id: 'c13_3', name: '洗碗精' }, { id: 'c13_4', name: '菜瓜布' }, { id: 'c13_5', name: '抹布' } ] }
-        ];
-
-        // 摺疊展開控制
-        const toggleMeal = (id) => openMeals.has(id) ? openMeals.delete(id) : openMeals.add(id);
-        const isMealOpen = (id) => openMeals.has(id);
-        const toggleChecklist = (id) => openChecklists.has(id) ? openChecklists.delete(id) : openChecklists.add(id);
-        const isChecklistOpen = (id) => openChecklists.has(id);
-
-        // 本地儲存資料 (自動記住輸入內容與勾選狀態)
-        const saveLocalStorage = () => {
-          localStorage.setItem('camping_planner_data', JSON.stringify(savedData));
-        };
-
-        onMounted(() => {
-          const raw = localStorage.getItem('camping_planner_data');
-          if (raw) {
-            try {
-              const parsed = JSON.parse(raw);
-              Object.assign(savedData, parsed);
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        });
-
-        return {
-          activeTab,
-          navItems,
-          campingInfo,
-          tents,
-          rentalItems,
-          menuData,
-          checklistCategories,
-          savedData,
-          toggleMeal,
-          isMealOpen,
-          toggleChecklist,
-          isChecklistOpen,
-          saveLocalStorage
-        };
-      }
-    }).mount('#app');
-  </script>
-</body>
-</html>
+      <!-- 2. 夥伴資訊 -->
+      <section id="tab-partners" class="tab-pane" style="display:none;">
+        <h2 class="section-title">👥 帳篷分組與夥伴</h2>
+        <div class="grid-2">
+          <div class="card">
