@@ -1,627 +1,477 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { 
-  Tent, 
-  Users, 
-  ShoppingBag, 
-  Utensils, 
-  CheckSquare, 
-  ChevronDown, 
-  ChevronUp, 
-  MapPin, 
-  Clock, 
-  Info,
-  Phone,
-  AlertCircle
-} from 'lucide-react';
-
-// --- Firebase Initialization ---
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'camping-planner-app';
-
-// --- Mock Data ---
-const CAMPING_INFO = {
-  name: '愛露營 露野森林',
-  address: '南投縣仁愛鄉春陽村',
-  time: '2026/11/21 ~ 2026/11/22',
-  phone: '0939 646 963 (在營區內有事聯絡請打 0911 570 827 找營主媽媽)',
-  rules: '停車一個晚上酌收200元費用。VIP區有獨立冰箱。營區內禁止使用發電機及高容量電器用品。嚴禁於地上直接生火，請架高至少離地面50公分以上。垃圾請確實做好分類。',
-  cost: '設備租借 NT$ 1043/人，VIP區營位費用 NT$ 332/人，Total: NT$ 1375/人 (皆以 8 人計算)'
-};
-
-const TENTS = [
-  {
-    id: 'tent1',
-    name: '⛺ 第一帳',
-    members: [
-      { name: '麵包', phone: '0955 141 643', group: '麵包夫妻' },
-      { name: '凱文', phone: 'LINE', group: '麵包夫妻' },
-      { name: '昱', phone: '0955 841 013', group: '昱夫妻' },
-      { name: '軒', phone: '0989 238 346', group: '昱夫妻' }
-    ]
-  },
-  {
-    id: 'tent2',
-    name: '⛺ 第二帳',
-    members: [
-      { name: 'E慈', phone: '0909 795 125', group: 'E慈夫妻' },
-      { name: '蔡維哲', phone: '0966 166 267', group: 'E慈夫妻' },
-      { name: '毓', phone: '0985 825 695', group: 'ㄩˋㄩˊ' },
-      { name: '魚', phone: '0977 401 875', group: 'ㄩˋㄩˊ' }
-    ]
-  }
-];
-
-const RENTAL_SHOP_LINK = 'https://luhaikong.com.tw/contents-2-3.html';
-const RENTAL_ITEMS = [
-  { id: 1, name: '6-8人帳', qty: 2, price: 1200, total: 2400, avg: 300 },
-  { id: 2, name: '充氣床墊雙人', qty: 3, price: 800, total: 2400, avg: 400 },
-  { id: 3, name: '蛋捲桌', qty: 2, price: 200, total: 400, avg: 50 },
-  { id: 4, name: '動力線', qty: 2, price: 100, total: 200, avg: 25 },
-  { id: 5, name: '燈條', qty: 2, price: 280, total: 560, avg: 70 },
-  { id: 6, name: '客廳帳', qty: 1, price: 680, total: 680, avg: 85 },
-  { id: 7, name: '客廳帳圍布', qty: 1, price: 400, total: 400, avg: 50 },
-  { id: 8, name: '投影組', qty: 1, price: 500, total: 500, avg: 63 },
-  { id: 9, name: '營錘', qty: 1, price: 50, total: 50, avg: 6 },
-];
-
-const MENU_DATA = [
-  { 
-    id: 'meal_1', 
-    title: '幻營辦桌大宴', 
-    type: 'list',
-    items: [
-      '五福臨門烏魚子大拼盤 (烏魚子)',
-      '御品錦繡珍寶海鮮羹 (海鮮羹)',
-      '步步高升櫻花蝦香米糕 (米糕)',
-      '富貴筍絲東坡大封肉 (東坡肉)',
-      '寶島酒家魷魚螺肉蒜鍋 (魷魚螺肉蒜)',
-      '和風花信鮑貝魚卵沙拉 (代鮑+魚卵)',
-      '金雞報喜竹香雙味全雞鍋 (竹香園雞+雞湯)'
-    ]
-  },
-  { id: 'meal_2', title: '牛排', type: 'fields', fields: ['食材', '調味料', '其他'] },
-  { id: 'meal_3', title: '墨西哥捲餅(有酪梨+番茄+香菜的那種)', type: 'fields', fields: ['食材', '調味料', '其他'] },
-  { id: 'meal_4', title: '大阪燒', type: 'fields', fields: ['食材', '調味料', '其他'] },
-  { id: 'meal_5', title: '關東煮', type: 'fields', fields: ['食材', '調味料', '其他'] },
-  { id: 'meal_6', title: '酒水', type: 'fields', fields: ['項目'] }
-];
-
-const CHECKLIST_CATEGORIES = [
-  {
-    id: 'c1', title: '📝 準備工作',
-    items: [ { id: 'c1_1', name: '訂營位' }, { id: 'c1_2', name: '租露營設備' }, { id: 'c1_3', name: '食材採買' } ]
-  },
-  {
-    id: 'c2', title: '⛺ 帳篷',
-    items: [ { id: 'c2_1', name: '帳篷' }, { id: 'c2_2', name: '營釘' }, { id: 'c2_3', name: '營柱' }, { id: 'c2_4', name: '營繩' }, { id: 'c2_5', name: '錘子' }, { id: 'c2_6', name: '地布' }, { id: 'c2_7', name: '客廳帳' }, { id: 'c2_8', name: '修補用具' } ]
-  },
-  {
-    id: 'c3', title: '💡 照明',
-    items: [ { id: 'c3_1', name: '營燈' }, { id: 'c3_2', name: '燈條' }, { id: 'c3_3', name: '燈串' }, { id: 'c3_4', name: '動力線' }, { id: 'c3_5', name: '延長線' }, { id: 'c3_6', name: '手電筒' }, { id: 'c3_7', name: '電池 / 充電線' } ]
-  },
-  {
-    id: 'c4', title: '🛏️ 寢具',
-    items: [ { id: 'c4_1', name: '充氣床墊' }, { id: 'c4_2', name: '毛毯 / 被子' }, { id: 'c4_3', name: '枕頭' }, { id: 'c4_4', name: '防潮墊' }, { id: 'c4_5', name: '睡袋' } ]
-  },
-  {
-    id: 'c5', title: '🪑 休憩',
-    items: [ { id: 'c5_1', name: '露營桌' }, { id: 'c5_2', name: '露營椅' } ]
-  },
-  {
-    id: 'c6_summer', title: '☀️ 夏日加碼',
-    items: [ { id: 'c6s_1', name: '風扇' }, { id: 'c6s_2', name: '行動冷氣' } ]
-  },
-  {
-    id: 'c6_winter', title: '❄️ 冬日加碼',
-    items: [ { id: 'c6w_1', name: '電熱毯' }, { id: 'c6w_2', name: '焚火台 (要離地)' } ]
-  },
-  {
-    id: 'c7', title: '👕 衣著',
-    items: [ { id: 'c7_1', name: '毛巾' }, { id: 'c7_2', name: '換洗衣物' }, { id: 'c7_3', name: '睡衣' }, { id: 'c7_4', name: '帽子' }, { id: 'c7_5', name: '襪子' }, { id: 'c7_6', name: '外套' }, { id: 'c7_7', name: '拖鞋' }, { id: 'c7_8', name: '運動鞋' } ]
-  },
-  {
-    id: 'c8', title: '🔑 出門必需品',
-    items: [ { id: 'c8_1', name: '手機' }, { id: 'c8_2', name: '鑰匙' }, { id: 'c8_3', name: '錢包' }, { id: 'c8_4', name: '充電線' }, { id: 'c8_5', name: '雨具' } ]
-  },
-  {
-    id: 'c9', title: '🍳 烹飪用品',
-    items: [ { id: 'c9_1', name: '烤架' }, { id: 'c9_2', name: '卡式爐' }, { id: 'c9_3', name: '瓦斯罐' }, { id: 'c9_4', name: '湯鍋' }, { id: 'c9_5', name: '平底鍋' }, { id: 'c9_6', name: '木炭' }, { id: 'c9_7', name: '打火機' }, { id: 'c9_8', name: '食用油' }, { id: 'c9_9', name: '隔熱墊' }, { id: 'c9_10', name: '盤子' }, { id: 'c9_11', name: '杯子' }, { id: 'c9_12', name: '餐具' }, { id: 'c9_13', name: '夾鏈袋' }, { id: 'c9_14', name: '鋁箔' }, { id: 'c9_15', name: '保鮮膜' }, { id: 'c9_16', name: '砧板' }, { id: 'c9_17', name: '刀具' }, { id: 'c9_18', name: '開瓶器' }, { id: 'c9_19', name: '餐巾紙' }, { id: 'c9_20', name: '飲料桶' }, { id: 'c9_21', name: '冰桶' } ]
-  },
-  {
-    id: 'c10', title: '🎵 娛樂用品',
-    items: [ { id: 'c10_1', name: '化妝' }, { id: 'c10_2', name: '藍芽喇叭' }, { id: 'c10_3', name: '投影機' }, { id: 'c10_4', name: '快樂的心' } ]
-  },
-  {
-    id: 'c11', title: '🪥 盥洗用品',
-    items: [ { id: 'c11_1', name: '洗髮精' }, { id: 'c11_2', name: '潤髮乳' }, { id: 'c11_3', name: '髮油' }, { id: 'c11_4', name: '沐浴乳' }, { id: 'c11_5', name: '牙刷' }, { id: 'c11_6', name: '牙膏' }, { id: 'c11_7', name: '漱口水' }, { id: 'c11_8', name: '吹風機' }, { id: 'c11_9', name: '衛生棉' } ]
-  },
-  {
-    id: 'c12', title: '🚑 緊急及其他個人用品',
-    items: [ { id: 'c12_1', name: '止痛藥' }, { id: 'c12_2', name: '暈車藥' }, { id: 'c12_3', name: '過敏藥物' }, { id: 'c12_4', name: '健保卡' }, { id: 'c12_5', name: 'OK蹦' }, { id: 'c12_6', name: '紗布' }, { id: 'c12_7', name: '自黏膠帶' }, { id: 'c12_8', name: '棉花棒' }, { id: 'c12_9', name: '溫度計' }, { id: 'c12_10', name: '優碘 / 藥膏' }, { id: 'c12_11', name: '消毒水' }, { id: 'c12_12', name: '75%酒精' } ]
-  },
-  {
-    id: 'c13', title: '🧹 清潔',
-    items: [ { id: 'c13_1', name: '垃圾袋' }, { id: 'c13_2', name: '衛生紙' }, { id: 'c13_3', name: '洗碗精' }, { id: 'c13_4', name: '菜瓜布' }, { id: 'c13_5', name: '抹布' } ]
-  }
-];
-
-// --- Reusable Input Component (Syncs on Blur) ---
-const SyncInput = ({ initialValue, onSave, placeholder, className = '' }) => {
-  const [val, setVal] = useState(initialValue || '');
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幻營旅團 露營計畫</title>
   
-  useEffect(() => {
-    setVal(initialValue || '');
-  }, [initialValue]);
-
-  return (
-    <input
-      type="text"
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => {
-        if (val !== initialValue) onSave(val);
-      }}
-      placeholder={placeholder}
-      className={`border border-stone-200 bg-white/70 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow ${className}`}
-    />
-  );
-};
-
-
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('info');
+  <!-- 載入 Tailwind CSS 負責美化排版 -->
+  <script src="https://cdn.tailwindcss.com"></script>
   
-  // Firebase Data States
-  const [menuState, setMenuState] = useState({});
-  const [checklistState, setChecklistState] = useState({});
-  
-  // UI States
-  const [expandedMeals, setExpandedMeals] = useState([]); // 預設全部收合
-  const [expandedChecklists, setExpandedChecklists] = useState([]); // 預設全部收合
-  const [isLoading, setIsLoading] = useState(true);
+  <!-- 載入 Babel 讓瀏覽器直接讀懂 React 語法 -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  // --- Auth Setup ---
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (err) {
-        console.error('Auth error:', err);
+  <style>
+    body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+    /* 隱藏捲軸但保持可捲動 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+  <div id="root"></div>
+
+  <!-- 主要程式碼 -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from "https://esm.sh/react@18";
+    import { createRoot } from "https://esm.sh/react-dom@18/client";
+    import { 
+      Tent, Users, ShoppingBag, Utensils, CheckSquare, 
+      ChevronDown, ChevronUp, MapPin, Clock, Info, Phone, AlertCircle
+    } from "https://esm.sh/lucide-react";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    // ==========================================
+    // 若未來要啟用雲端儲存，請將您的 Firebase 設定貼在這邊
+    // (目前留白沒關係，網頁依然可以正常顯示與操作)
+    // ==========================================
+    const firebaseConfig = {};
+    
+    const isFirebaseConfigured = Object.keys(firebaseConfig).length > 0;
+    let app, auth, db;
+    if (isFirebaseConfigured) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    }
+    const appId = 'camping-planner-261121';
+
+    // ==========================================
+    // 露營資料區
+    // ==========================================
+    const CAMPING_INFO = {
+      name: '愛露營 露野森林',
+      address: '南投縣仁愛鄉春陽村',
+      time: '2026/11/21 ~ 2026/11/22',
+      phone: '0939 646 963 (在營區內有事聯絡請打 0911 570 827 找營主媽媽)',
+      rules: '停車一個晚上酌收200元費用。VIP區有獨立冰箱。營區內禁止使用發電機及高容量電器用品。嚴禁於地上直接生火，請架高至少離地面50公分以上。垃圾確實分類。',
+      cost: '設備租借 NT$ 1043/人，VIP區營位費用 NT$ 332/人，Total: NT$ 1375/人 (皆以 8 人計算)'
+    };
+
+    const TENTS = [
+      {
+        id: 'tent1', name: '⛺ 第一帳',
+        members: [
+          { name: '麵包', phone: '0955 141 643', group: '麵包夫妻' },
+          { name: '凱文', phone: 'LINE', group: '麵包夫妻' },
+          { name: '昱', phone: '0955 841 013', group: '昱夫妻' },
+          { name: '軒', phone: '0989 238 346', group: '昱夫妻' }
+        ]
+      },
+      {
+        id: 'tent2', name: '⛺ 第二帳',
+        members: [
+          { name: 'E慈', phone: '0909 795 125', group: 'E慈夫妻' },
+          { name: '蔡維哲', phone: '0966 166 267', group: 'E慈夫妻' },
+          { name: '毓', phone: '0985 825 695', group: 'ㄩˋㄩˊ' },
+          { name: '魚', phone: '0977 401 875', group: 'ㄩˋㄩˊ' }
+        ]
       }
-    };
-    initAuth();
+    ];
 
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (!u) setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    const RENTAL_SHOP_LINK = 'https://luhaikong.com.tw/contents-2-3.html';
+    const RENTAL_ITEMS = [
+      { id: 1, name: '6-8人帳', qty: 2, price: 1200, total: 2400, avg: 300 },
+      { id: 2, name: '充氣床墊雙人', qty: 3, price: 800, total: 2400, avg: 400 },
+      { id: 3, name: '蛋捲桌', qty: 2, price: 200, total: 400, avg: 50 },
+      { id: 4, name: '動力線', qty: 2, price: 100, total: 200, avg: 25 },
+      { id: 5, name: '燈條', qty: 2, price: 280, total: 560, avg: 70 },
+      { id: 6, name: '客廳帳', qty: 1, price: 680, total: 680, avg: 85 },
+      { id: 7, name: '客廳帳圍布', qty: 1, price: 400, total: 400, avg: 50 },
+      { id: 8, name: '投影組', qty: 1, price: 500, total: 500, avg: 63 },
+      { id: 9, name: '營錘', qty: 1, price: 50, total: 50, avg: 6 },
+    ];
 
-  // --- Data Fetching ---
-  useEffect(() => {
-    if (!user) return;
-    setIsLoading(true);
+    const MENU_DATA = [
+      { 
+        id: 'meal_1', title: '幻營辦桌大宴', type: 'list',
+        items: [
+          '五福臨門烏魚子大拼盤 (烏魚子)',
+          '御品錦繡珍寶海鮮羹 (海鮮羹)',
+          '步步高升櫻花蝦香米糕 (米糕)',
+          '富貴筍絲東坡大封肉 (東坡肉)',
+          '寶島酒家魷魚螺肉蒜鍋 (魷魚螺肉蒜)',
+          '和風花信鮑貝魚卵沙拉 (代鮑+魚卵)',
+          '金雞報喜竹香雙味全雞鍋 (竹香園雞+雞湯)'
+        ]
+      },
+      { id: 'meal_2', title: '牛排', type: 'fields', fields: ['食材', '調味料', '其他'] },
+      { id: 'meal_3', title: '墨西哥捲餅(有酪梨+番茄+香菜的那種)', type: 'fields', fields: ['食材', '調味料', '其他'] },
+      { id: 'meal_4', title: '大阪燒', type: 'fields', fields: ['食材', '調味料', '其他'] },
+      { id: 'meal_5', title: '關東煮', type: 'fields', fields: ['食材', '調味料', '其他'] },
+      { id: 'meal_6', title: '酒水', type: 'fields', fields: ['項目'] }
+    ];
 
-    const menuRef = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'menu');
-    const checkRef = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'checklist');
+    const CHECKLIST_CATEGORIES = [
+      { id: 'c1', title: '📝 準備工作', items: [ { id: 'c1_1', name: '訂營位' }, { id: 'c1_2', name: '租露營設備' }, { id: 'c1_3', name: '食材採買' } ] },
+      { id: 'c2', title: '⛺ 帳篷', items: [ { id: 'c2_1', name: '帳篷' }, { id: 'c2_2', name: '營釘' }, { id: 'c2_3', name: '營柱' }, { id: 'c2_4', name: '營繩' }, { id: 'c2_5', name: '錘子' }, { id: 'c2_6', name: '地布' }, { id: 'c2_7', name: '客廳帳' }, { id: 'c2_8', name: '修補用具' } ] },
+      { id: 'c3', title: '💡 照明', items: [ { id: 'c3_1', name: '營燈' }, { id: 'c3_2', name: '燈條' }, { id: 'c3_3', name: '燈串' }, { id: 'c3_4', name: '動力線' }, { id: 'c3_5', name: '延長線' }, { id: 'c3_6', name: '手電筒' }, { id: 'c3_7', name: '電池 / 充電線' } ] },
+      { id: 'c4', title: '🛏️ 寢具', items: [ { id: 'c4_1', name: '充氣床墊' }, { id: 'c4_2', name: '毛毯 / 被子' }, { id: 'c4_3', name: '枕頭' }, { id: 'c4_4', name: '防潮墊' }, { id: 'c4_5', name: '睡袋' } ] },
+      { id: 'c5', title: '🪑 休憩', items: [ { id: 'c5_1', name: '露營桌' }, { id: 'c5_2', name: '露營椅' } ] },
+      { id: 'c6_summer', title: '☀️ 夏日加碼', items: [ { id: 'c6s_1', name: '風扇' }, { id: 'c6s_2', name: '行動冷氣' } ] },
+      { id: 'c6_winter', title: '❄️ 冬日加碼', items: [ { id: 'c6w_1', name: '電熱毯' }, { id: 'c6w_2', name: '焚火台 (要離地)' } ] },
+      { id: 'c7', title: '👕 衣著', items: [ { id: 'c7_1', name: '毛巾' }, { id: 'c7_2', name: '換洗衣物' }, { id: 'c7_3', name: '睡衣' }, { id: 'c7_4', name: '帽子' }, { id: 'c7_5', name: '襪子' }, { id: 'c7_6', name: '外套' }, { id: 'c7_7', name: '拖鞋' }, { id: 'c7_8', name: '運動鞋' } ] },
+      { id: 'c8', title: '🔑 出門必需品', items: [ { id: 'c8_1', name: '手機' }, { id: 'c8_2', name: '鑰匙' }, { id: 'c8_3', name: '錢包' }, { id: 'c8_4', name: '充電線' }, { id: 'c8_5', name: '雨具' } ] },
+      { id: 'c9', title: '🍳 烹飪用品', items: [ { id: 'c9_1', name: '烤架' }, { id: 'c9_2', name: '卡式爐' }, { id: 'c9_3', name: '瓦斯罐' }, { id: 'c9_4', name: '湯鍋' }, { id: 'c9_5', name: '平底鍋' }, { id: 'c9_6', name: '木炭' }, { id: 'c9_7', name: '打火機' }, { id: 'c9_8', name: '食用油' }, { id: 'c9_9', name: '隔熱墊' }, { id: 'c9_10', name: '盤子' }, { id: 'c9_11', name: '杯子' }, { id: 'c9_12', name: '餐具' }, { id: 'c9_13', name: '夾鏈袋' }, { id: 'c9_14', name: '鋁箔' }, { id: 'c9_15', name: '保鮮膜' }, { id: 'c9_16', name: '砧板' }, { id: 'c9_17', name: '刀具' }, { id: 'c9_18', name: '開瓶器' }, { id: 'c9_19', name: '餐巾紙' }, { id: 'c9_20', name: '飲料桶' }, { id: 'c9_21', name: '冰桶' } ] },
+      { id: 'c10', title: '🎵 娛樂用品', items: [ { id: 'c10_1', name: '化妝' }, { id: 'c10_2', name: '藍芽喇叭' }, { id: 'c10_3', name: '投影機' }, { id: 'c10_4', name: '快樂的心' } ] },
+      { id: 'c11', title: '🪥 盥洗用品', items: [ { id: 'c11_1', name: '洗髮精' }, { id: 'c11_2', name: '潤髮乳' }, { id: 'c11_3', name: '髮油' }, { id: 'c11_4', name: '沐浴乳' }, { id: 'c11_5', name: '牙刷' }, { id: 'c11_6', name: '牙膏' }, { id: 'c11_7', name: '漱口水' }, { id: 'c11_8', name: '吹風機' }, { id: 'c11_9', name: '衛生棉' } ] },
+      { id: 'c12', title: '🚑 緊急及其他', items: [ { id: 'c12_1', name: '止痛藥' }, { id: 'c12_2', name: '暈車藥' }, { id: 'c12_3', name: '過敏藥物' }, { id: 'c12_4', name: '健保卡' }, { id: 'c12_5', name: 'OK蹦' }, { id: 'c12_6', name: '紗布' }, { id: 'c12_7', name: '自黏膠帶' }, { id: 'c12_8', name: '棉花棒' }, { id: 'c12_9', name: '溫度計' }, { id: 'c12_10', name: '優碘/藥膏' }, { id: 'c12_11', name: '消毒水' }, { id: 'c12_12', name: '75%酒精' } ] },
+      { id: 'c13', title: '🧹 清潔', items: [ { id: 'c13_1', name: '垃圾袋' }, { id: 'c13_2', name: '衛生紙' }, { id: 'c13_3', name: '洗碗精' }, { id: 'c13_4', name: '菜瓜布' }, { id: 'c13_5', name: '抹布' } ] }
+    ];
 
-    const unsubMenu = onSnapshot(menuRef, (docSnap) => {
-      if (docSnap.exists()) setMenuState(docSnap.data());
-    }, (err) => console.error(err));
-
-    const unsubCheck = onSnapshot(checkRef, (docSnap) => {
-      if (docSnap.exists()) setChecklistState(docSnap.data());
-      setIsLoading(false);
-    }, (err) => {
-      console.error(err);
-      setIsLoading(false);
-    });
-
-    return () => {
-      unsubMenu();
-      unsubCheck();
-    };
-  }, [user]);
-
-  // --- Update Handlers ---
-  const updateMenuData = async (key, value) => {
-    if (!user) return;
-    const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'menu');
-    await setDoc(ref, { [key]: value }, { merge: true });
-  };
-
-  const updateChecklistData = async (key, value) => {
-    if (!user) return;
-    const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'checklist');
-    await setDoc(ref, { [key]: value }, { merge: true });
-  };
-
-  const toggleMealAccordion = (mealId) => {
-    setExpandedMeals(prev => 
-      prev.includes(mealId) ? prev.filter(id => id !== mealId) : [...prev, mealId]
-    );
-  };
-
-  const toggleChecklistAccordion = (catId) => {
-    setExpandedChecklists(prev => 
-      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
-    );
-  };
-
-  // --- Render Tabs ---
-  const renderTabContent = () => {
-    if (isLoading) {
+    // ==========================================
+    // React 元件與畫面渲染
+    // ==========================================
+    const SyncInput = ({ initialValue, onSave, placeholder, className = '' }) => {
+      const [val, setVal] = useState(initialValue || '');
+      useEffect(() => { setVal(initialValue || ''); }, [initialValue]);
       return (
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-700"></div>
+        <input 
+          type="text" 
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={() => { if (val !== initialValue) onSave(val); }}
+          placeholder={placeholder}
+          className={`border border-stone-200 bg-white/70 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow ${className}`}
+        />
+      );
+    };
+
+    const App = () => {
+      const [user, setUser] = useState(null);
+      const [activeTab, setActiveTab] = useState('info');
+      const [menuState, setMenuState] = useState({});
+      const [checklistState, setChecklistState] = useState({});
+      const [expandedMeals, setExpandedMeals] = useState([]);
+      const [expandedChecklists, setExpandedChecklists] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+
+      useEffect(() => {
+        if (!isFirebaseConfigured) return;
+        setIsLoading(true);
+        const initAuth = async () => {
+          try { await signInAnonymously(auth); } catch (err) { console.error('Auth error:', err); }
+        };
+        initAuth();
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+          setUser(u);
+          if (!u) setIsLoading(false);
+        });
+        return () => unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (!isFirebaseConfigured || !user) return;
+        const menuRef = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'menu');
+        const checkRef = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'checklist');
+        const unsubMenu = onSnapshot(menuRef, (docSnap) => { if (docSnap.exists()) setMenuState(docSnap.data()); });
+        const unsubCheck = onSnapshot(checkRef, (docSnap) => { 
+          if (docSnap.exists()) setChecklistState(docSnap.data());
+          setIsLoading(false);
+        });
+        return () => { unsubMenu(); unsubCheck(); };
+      }, [user]);
+
+      const updateMenuData = async (key, value) => {
+        if (!isFirebaseConfigured || !user) {
+          setMenuState(prev => ({...prev, [key]: value}));
+          return;
+        }
+        const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'menu');
+        await setDoc(ref, { [key]: value }, { merge: true });
+      };
+
+      const updateChecklistData = async (key, value) => {
+        if (!isFirebaseConfigured || !user) {
+          setChecklistState(prev => ({...prev, [key]: value}));
+          return;
+        }
+        const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'camping_data', 'checklist');
+        await setDoc(ref, { [key]: value }, { merge: true });
+      };
+
+      const toggleMealAccordion = (mealId) => {
+        setExpandedMeals(prev => prev.includes(mealId) ? prev.filter(id => id !== mealId) : [...prev, mealId]);
+      };
+
+      const toggleChecklistAccordion = (catId) => {
+        setExpandedChecklists(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]);
+      };
+
+      const renderTabContent = () => {
+        if (isLoading) return <div className="p-8 text-center text-stone-500">載入中...</div>;
+
+        switch (activeTab) {
+          case 'info':
+            return (
+              <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
+                <h2 className="text-2xl font-bold text-stone-800 mb-6 flex items-center gap-2"><MapPin className="text-emerald-600" /> 露營區資訊</h2>
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-6">
+                  <h3 className="text-xl font-bold text-emerald-800">{CAMPING_INFO.name}</h3>
+                  <div className="space-y-3 text-stone-600">
+                    <div className="flex items-start gap-3"><MapPin className="w-5 h-5 shrink-0 text-stone-400" /><span>{CAMPING_INFO.address}</span></div>
+                    <div className="flex items-start gap-3"><Clock className="w-5 h-5 shrink-0 text-stone-400" /><span>{CAMPING_INFO.time}</span></div>
+                    <div className="flex items-start gap-3"><Phone className="w-5 h-5 shrink-0 text-stone-400" /><span>{CAMPING_INFO.phone}</span></div>
+                  </div>
+                  <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                    <h4 className="font-bold text-stone-800 mb-2 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-orange-500" /> 營區規範與收費</h4>
+                    <p className="text-sm leading-relaxed text-stone-600 mb-3">{CAMPING_INFO.rules}</p>
+                    <p className="text-sm font-semibold text-emerald-700 bg-emerald-50 p-3 rounded-lg">{CAMPING_INFO.cost}</p>
+                  </div>
+                  <div className="space-y-4 pt-4 border-t border-stone-100">
+                    <div>
+                      <span className="block text-sm font-medium text-stone-500 mb-2">營區配置 (如果有將圖片上傳至 GitHub，即會顯示)</span>
+                      <img src="./image%201.png" alt="營區配置" className="w-full rounded-xl border border-stone-100 object-cover" onError={(e) => e.target.style.display='none'} />
+                    </div>
+                    <div>
+                      <img src="./image.png" alt="營區地圖" className="w-full rounded-xl border border-stone-100 object-cover" onError={(e) => e.target.style.display='none'} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 'partners':
+            return (
+              <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
+                <h2 className="text-2xl font-bold text-stone-800 mb-6 flex items-center gap-2"><Users className="text-emerald-600" /> 夥伴資訊</h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {TENTS.map(tent => (
+                    <div key={tent.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                      <div className="bg-stone-50 px-6 py-4 border-b border-stone-100"><h3 className="font-bold text-lg text-stone-800">{tent.name}</h3></div>
+                      <div className="divide-y divide-stone-50">
+                        {tent.members.map((member, idx) => (
+                          <div key={idx} className="px-6 py-4 flex items-center gap-4 hover:bg-stone-50/50 transition-colors">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">{member.name.substring(0, 1)}</div>
+                            <div className="flex-1">
+                              <p className="font-medium text-stone-800">{member.name} <span className="text-xs px-2 py-1 bg-stone-100 rounded-full text-stone-500 ml-2">{member.group}</span></p>
+                              <p className="text-sm text-stone-500 flex items-center gap-1 mt-1"><Phone className="w-3 h-3" /> {member.phone}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+
+          case 'rental':
+            return (
+              <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
+                <h2 className="text-2xl font-bold text-stone-800 mb-6 flex items-center gap-2"><Tent className="text-emerald-600" /> 裝備租借</h2>
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-1 md:p-6 overflow-hidden">
+                  <div className="flex justify-between items-center p-4 md:p-0 md:mb-6">
+                    <h3 className="font-bold text-lg text-stone-800">露海空</h3>
+                    <a href={RENTAL_SHOP_LINK} target="_blank" rel="noreferrer" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium px-3 py-1.5 bg-emerald-50 rounded-lg transition-colors">查看店家</a>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-100 text-stone-500 text-sm">
+                          <th className="py-3 px-4 font-medium">品項</th>
+                          <th className="py-3 px-4 font-medium text-center">數量</th>
+                          <th className="py-3 px-4 font-medium text-right">單價</th>
+                          <th className="py-3 px-4 font-medium text-right">總價</th>
+                          <th className="py-3 px-4 font-medium text-right text-emerald-600">均分/人</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {RENTAL_ITEMS.map((item) => (
+                          <tr key={item.id} className="hover:bg-stone-50/30 transition-colors">
+                            <td className="py-3 px-4 font-medium text-stone-800">{item.name}</td>
+                            <td className="py-3 px-4 text-center text-stone-600">{item.qty}</td>
+                            <td className="py-3 px-4 text-right text-stone-600">${item.price}</td>
+                            <td className="py-3 px-4 text-right text-stone-800 font-medium">${item.total}</td>
+                            <td className="py-3 px-4 text-right text-emerald-600 font-medium">${item.avg}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-stone-50/80 font-bold">
+                          <td colSpan="3" className="py-4 px-4 text-stone-800">Total (8人計)</td>
+                          <td className="py-4 px-4 text-right text-stone-800">$7540</td>
+                          <td className="py-4 px-4 text-right text-emerald-600 text-lg">$1049</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 'menu':
+            return (
+              <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
+                <h2 className="text-2xl font-bold text-stone-800 mb-2 flex items-center gap-2"><Utensils className="text-emerald-600" /> 飲食清單</h2>
+                <p className="text-stone-500 mb-6 text-sm">點擊展開菜單，並依照分類填寫需要的食材。</p>
+                <div className="space-y-4">
+                  {MENU_DATA.map(meal => {
+                    const isExpanded = expandedMeals.includes(meal.id);
+                    return (
+                      <div key={meal.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden transition-all duration-200">
+                        <button onClick={() => toggleMealAccordion(meal.id)} className="w-full px-6 py-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100/50 transition-colors">
+                          <span className="font-bold text-stone-800 text-left">{meal.title}</span>
+                          {isExpanded ? <ChevronUp className="w-5 h-5 text-stone-400" /> : <ChevronDown className="w-5 h-5 text-stone-400" />}
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="p-6 bg-white border-t border-stone-100">
+                            {meal.type === 'list' && (
+                              <div className="grid md:grid-cols-2 gap-4">
+                                {meal.items.map((dish, idx) => {
+                                  const key = `${meal.id}_dish_${idx}`;
+                                  return (
+                                    <div key={idx} className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                                      <span className="block text-sm font-medium text-emerald-800 mb-2">{dish}</span>
+                                      <SyncInput initialValue={menuState[key]} onSave={(v) => updateMenuData(key, v)} placeholder="請填寫需要的食材..." className="w-full" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {meal.type === 'fields' && (
+                              <div className="grid md:grid-cols-3 gap-4">
+                                {meal.fields.map((field, idx) => {
+                                  const key = `${meal.id}_field_${idx}`;
+                                  return (
+                                    <div key={idx} className="flex flex-col gap-2">
+                                      <span className="text-sm font-medium text-stone-500 pl-1">{field}</span>
+                                      <SyncInput initialValue={menuState[key]} onSave={(v) => updateMenuData(key, v)} placeholder={`請輸入${field}...`} className="w-full" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+
+          case 'checklist':
+            return (
+              <div className="p-4 md:p-8 animate-fade-in pb-24 md:pb-8">
+                <h2 className="text-2xl font-bold text-stone-800 mb-2 flex items-center gap-2"><CheckSquare className="text-emerald-600" /> 裝備 Check List</h2>
+                <p className="text-stone-500 mb-6 text-sm">點擊分類展開細項，打勾確認或寫下備註（如負責人、租借數量等）。</p>
+                <div className="grid md:grid-cols-2 gap-4 items-start">
+                  {CHECKLIST_CATEGORIES.map(category => {
+                    const isExpanded = expandedChecklists.includes(category.id);
+                    return (
+                      <div key={category.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                        <button onClick={() => toggleChecklistAccordion(category.id)} className="w-full px-5 py-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100/50 transition-colors">
+                          <h3 className="font-bold text-stone-800">{category.title}</h3>
+                          {isExpanded ? <ChevronUp className="w-5 h-5 text-stone-400" /> : <ChevronDown className="w-5 h-5 text-stone-400" />}
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="p-2 border-t border-stone-100">
+                            <div className="divide-y divide-stone-50">
+                              {category.items.map(item => {
+                                const isChecked = checklistState[`${item.id}_checked`] || false;
+                                const remarkKey = `${item.id}_remark`;
+                                return (
+                                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 hover:bg-stone-50/50 rounded-lg transition-colors">
+                                    <label className="flex items-center gap-3 cursor-pointer flex-1 group">
+                                      <div className="relative flex items-center justify-center">
+                                        <input type="checkbox" checked={isChecked} onChange={(e) => updateChecklistData(`${item.id}_checked`, e.target.checked)} className="peer sr-only" />
+                                        <div className="w-5 h-5 border-2 border-stone-300 rounded-md peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all flex items-center justify-center">
+                                          <svg className={`w-3.5 h-3.5 text-white ${isChecked ? 'opacity-100 scale-100' : 'opacity-0 scale-50'} transition-all`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        </div>
+                                      </div>
+                                      <span className={`text-sm select-none transition-colors ${isChecked ? 'text-stone-400 line-through' : 'text-stone-700 font-medium group-hover:text-stone-900'}`}>{item.name}</span>
+                                    </label>
+                                    <div className="pl-8 sm:pl-0 w-full sm:w-48 shrink-0">
+                                      <SyncInput initialValue={checklistState[remarkKey]} onSave={(v) => updateChecklistData(remarkKey, v)} placeholder="新增備註..." className="w-full bg-transparent border-stone-200/60 focus:bg-white" />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          default: return null;
+        }
+      };
+
+      const navItems = [
+        { id: 'info', label: '營區資訊', icon: Info },
+        { id: 'partners', label: '夥伴', icon: Users },
+        { id: 'rental', label: '租借', icon: Tent },
+        { id: 'menu', label: '菜單', icon: Utensils },
+        { id: 'checklist', label: '清單', icon: CheckSquare }
+      ];
+
+      return (
+        <div className="min-h-screen flex flex-col md:flex-row bg-stone-50/50">
+          {/* Desktop Sidebar */}
+          <aside className="hidden md:flex flex-col w-64 bg-white border-r border-stone-200 fixed h-full z-10">
+            <div className="p-6 border-b border-stone-100">
+              <h1 className="text-xl font-black text-emerald-900 tracking-tight flex items-center gap-2"><Tent className="text-emerald-600" /> 幻營旅團</h1>
+              <p className="text-xs text-stone-400 mt-1 font-medium">Camping Planner</p>
+            </div>
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto no-scrollbar">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`}>
+                    <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} /> {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Mobile Bottom Nav */}
+          <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-stone-200 flex justify-around p-2 pb-safe z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+            {navItems.map(item => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button key={item.id} onClick={() => setActiveTab(item.id)} className="flex flex-col items-center p-2 rounded-xl min-w-[4rem] transition-colors relative">
+                  <Icon className={`w-6 h-6 mb-1 transition-colors ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} />
+                  <span className={`text-[10px] font-semibold ${isActive ? 'text-emerald-700' : 'text-stone-500'}`}>{item.label}</span>
+                  {isActive && <div className="absolute top-0 w-8 h-1 bg-emerald-500 rounded-b-full shadow-sm" />}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Main Content Area */}
+          <main className="flex-1 md:ml-64 relative min-h-screen">
+            <div className="max-w-4xl mx-auto w-full">
+              <header className="md:hidden bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-stone-200/50 p-4 px-6 flex items-center justify-center shadow-sm">
+                <h1 className="text-lg font-black text-emerald-900 tracking-tight flex items-center gap-2"><Tent className="text-emerald-600 w-5 h-5" /> 幻營旅團</h1>
+              </header>
+              {renderTabContent()}
+            </div>
+          </main>
         </div>
       );
-    }
+    };
 
-    switch (activeTab) {
-      case 'info':
-        return (
-          <div className="space-y-6 max-w-3xl mx-auto pb-8">
-            <h2 className="text-2xl font-bold text-stone-800 border-b-2 border-emerald-600 pb-2 inline-block">露營區資訊</h2>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-6 space-y-4">
-              <h3 className="text-xl font-bold text-emerald-800">{CAMPING_INFO.name}</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start space-x-3 text-stone-600">
-                  <MapPin className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-stone-800">地址</p>
-                    <p>{CAMPING_INFO.address}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-3 text-stone-600">
-                  <Clock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-stone-800">活動時間</p>
-                    <p>{CAMPING_INFO.time}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3 text-stone-600 md:col-span-2">
-                  <Phone className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-stone-800">聯絡電話</p>
-                    <p>{CAMPING_INFO.phone}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-stone-100 pt-4 mt-4">
-                <h4 className="font-semibold text-stone-800 mb-2 flex items-center">
-                  <Info className="w-4 h-4 mr-2 text-emerald-600"/> 費用試算
-                </h4>
-                <p className="text-stone-600 text-sm">{CAMPING_INFO.cost}</p>
-              </div>
-
-              <div className="bg-amber-50 rounded-lg p-4 text-sm text-amber-800 flex items-start border border-amber-100">
-                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="leading-relaxed">{CAMPING_INFO.rules}</p>
-              </div>
-
-              {/* Image Placeholders */}
-              <div className="space-y-4 mt-6">
-                <div className="w-full bg-stone-100 rounded-lg border border-stone-200 overflow-hidden flex flex-col items-center justify-center min-h-[250px] relative">
-                  <img src="image.jpg" alt="營區地圖" className="absolute inset-0 w-full h-full object-contain opacity-60" onError={(e) => e.target.style.display='none'} />
-                  <span className="text-stone-400 font-medium z-10 bg-white/80 px-3 py-1 rounded">營區地圖 (image.jpg)</span>
-                </div>
-                <div className="w-full bg-stone-100 rounded-lg border border-stone-200 overflow-hidden flex flex-col items-center justify-center min-h-[250px] relative">
-                  <img src="image 1.jpg" alt="營區配置" className="absolute inset-0 w-full h-full object-contain opacity-60" onError={(e) => e.target.style.display='none'} />
-                  <span className="text-stone-400 font-medium z-10 bg-white/80 px-3 py-1 rounded">營區配置 (image 1.jpg)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'partners':
-        return (
-          <div className="space-y-6 max-w-3xl mx-auto pb-8">
-            <h2 className="text-2xl font-bold text-stone-800 border-b-2 border-emerald-600 pb-2 inline-block">夥伴資訊</h2>
-            
-            <div className="space-y-6">
-              {TENTS.map(tent => (
-                <div key={tent.id} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-                  <div className="bg-emerald-50 px-4 py-3 border-b border-emerald-100">
-                    <h3 className="text-lg font-bold text-emerald-900">{tent.name}</h3>
-                  </div>
-                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {tent.members.map((member, idx) => (
-                      <div key={idx} className="flex items-center space-x-3 p-3 bg-stone-50 rounded-lg border border-stone-100">
-                        <div className="bg-emerald-100 text-emerald-700 w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                          {member.name.substring(0, 1)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-stone-800">{member.name} <span className="text-xs font-normal text-stone-500 ml-1">({member.group})</span></p>
-                          <p className="text-sm text-stone-500 flex items-center mt-0.5">
-                            <Phone className="w-3 h-3 mr-1" /> {member.phone}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'rental':
-        return (
-          <div className="space-y-6 max-w-3xl mx-auto pb-8">
-            <h2 className="text-2xl font-bold text-stone-800 border-b-2 border-emerald-600 pb-2 inline-block">裝備租借資訊</h2>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-emerald-800">露海空</h3>
-                <a href={RENTAL_SHOP_LINK} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline">
-                  查看店家網頁
-                </a>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-stone-600">
-                  <thead className="text-xs text-stone-700 uppercase bg-stone-50 border-b border-stone-200">
-                    <tr>
-                      <th className="px-4 py-3">品項</th>
-                      <th className="px-4 py-3">數量</th>
-                      <th className="px-4 py-3">單價</th>
-                      <th className="px-4 py-3">總價</th>
-                      <th className="px-4 py-3">均分/人</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {RENTAL_ITEMS.map((item) => (
-                      <tr key={item.id} className="border-b border-stone-100 hover:bg-stone-50/50">
-                        <td className="px-4 py-3 font-medium text-stone-800">{item.name}</td>
-                        <td className="px-4 py-3">{item.qty}</td>
-                        <td className="px-4 py-3">{item.price}</td>
-                        <td className="px-4 py-3">{item.total}</td>
-                        <td className="px-4 py-3">{item.avg}</td>
-                      </tr>
-                    ))}
-                    <tr className="bg-emerald-50/50 font-bold text-stone-800">
-                      <td className="px-4 py-3" colSpan="3">Total</td>
-                      <td className="px-4 py-3 text-emerald-700">7540</td>
-                      <td className="px-4 py-3 text-emerald-700">1049</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'menu':
-        return (
-          <div className="space-y-6 max-w-3xl mx-auto pb-8">
-            <h2 className="text-2xl font-bold text-stone-800 border-b-2 border-emerald-600 pb-2 inline-block">飲食清單</h2>
-            <p className="text-sm text-stone-500">點擊展開菜單，並依照分類填寫需要的食材。</p>
-
-            <div className="space-y-4">
-              {MENU_DATA.map(meal => {
-                const isExpanded = expandedMeals.includes(meal.id);
-                return (
-                  <div key={meal.id} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-                    <button 
-                      onClick={() => toggleMealAccordion(meal.id)}
-                      className="w-full flex items-center justify-between p-4 bg-stone-50 hover:bg-stone-100 transition-colors text-left"
-                    >
-                      <span className="font-bold text-stone-800 text-lg">{meal.title}</span>
-                      {isExpanded ? <ChevronUp className="w-5 h-5 text-stone-500" /> : <ChevronDown className="w-5 h-5 text-stone-500" />}
-                    </button>
-                    
-                    {isExpanded && (
-                      <div className="p-4 border-t border-stone-200 bg-white">
-                        {meal.type === 'list' && (
-                          <div className="space-y-4">
-                            {meal.items.map((dish, idx) => {
-                              const key = `${meal.id}_dish_${idx}`;
-                              return (
-                                <div key={key} className="flex flex-col space-y-1">
-                                  <span className="text-stone-700 text-sm font-bold pl-1">{dish}</span>
-                                  <SyncInput 
-                                    initialValue={menuState[key]} 
-                                    onSave={(val) => updateMenuData(key, val)}
-                                    placeholder="填寫所需食材或備註..."
-                                    className="w-full"
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {meal.type === 'fields' && (
-                          <div className="space-y-4">
-                            {meal.fields.map((field, idx) => {
-                              const key = `${meal.id}_field_${idx}`;
-                              return (
-                                <div key={key} className="flex flex-col space-y-1">
-                                  <span className="text-stone-700 text-sm font-bold pl-1">{field}</span>
-                                  <SyncInput 
-                                    initialValue={menuState[key]} 
-                                    onSave={(val) => updateMenuData(key, val)}
-                                    placeholder={`填寫${field}...`}
-                                    className="w-full"
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-
-      case 'checklist':
-        return (
-          <div className="space-y-6 max-w-3xl mx-auto pb-8">
-            <h2 className="text-2xl font-bold text-stone-800 border-b-2 border-emerald-600 pb-2 inline-block">Check list</h2>
-            <p className="text-sm text-stone-500">勾選確認物品，並利用右側欄位寫下備註（如負責人、租借數量等）。</p>
-
-            <div className="space-y-6">
-              {CHECKLIST_CATEGORIES.map(category => {
-                const isExpanded = expandedChecklists.includes(category.id);
-                return (
-                  <div key={category.id} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-                    <button 
-                      onClick={() => toggleChecklistAccordion(category.id)}
-                      className="w-full flex items-center justify-between bg-emerald-50 px-4 py-3 border-b border-emerald-100 hover:bg-emerald-100/50 transition-colors text-left"
-                    >
-                      <h3 className="text-lg font-bold text-emerald-900">{category.title}</h3>
-                      {isExpanded ? <ChevronUp className="w-5 h-5 text-emerald-700" /> : <ChevronDown className="w-5 h-5 text-emerald-700" />}
-                    </button>
-                    
-                    {isExpanded && (
-                      <div className="p-2 sm:p-4">
-                        <div className="space-y-2">
-                          {category.items.map(item => {
-                            const isChecked = checklistState[`${item.id}_checked`] || false;
-                            const remarkKey = `${item.id}_remark`;
-                            return (
-                              <div 
-                                key={item.id} 
-                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg transition-colors border border-transparent ${isChecked ? 'bg-stone-50' : 'hover:bg-stone-50'}`}
-                              >
-                                <label className="flex items-center cursor-pointer mb-2 sm:mb-0 flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={(e) => updateChecklistData(`${item.id}_checked`, e.target.checked)}
-                                    className="w-5 h-5 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500 cursor-pointer"
-                                  />
-                                  <span className={`ml-3 font-medium transition-all ${isChecked ? 'text-stone-400 line-through' : 'text-stone-700'}`}>
-                                    {item.name}
-                                  </span>
-                                </label>
-                                
-                                <div className="w-full sm:w-64 pl-8 sm:pl-0">
-                                  <SyncInput
-                                    initialValue={checklistState[remarkKey]}
-                                    onSave={(val) => updateChecklistData(remarkKey, val)}
-                                    placeholder="備註 (例: 租借*2, 阿明帶)"
-                                    className={`w-full text-sm ${isChecked ? 'bg-transparent border-transparent' : ''}`}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const navItems = [
-    { id: 'info', label: '營區資訊', icon: <Tent className="w-5 h-5" /> },
-    { id: 'partners', label: '夥伴', icon: <Users className="w-5 h-5" /> },
-    { id: 'rental', label: '設備租借', icon: <ShoppingBag className="w-5 h-5" /> },
-    { id: 'menu', label: '飲食清單', icon: <Utensils className="w-5 h-5" /> },
-    { id: 'checklist', label: 'Check list', icon: <CheckSquare className="w-5 h-5" /> },
-  ];
-
-  return (
-    <div className="flex h-screen bg-stone-100 font-sans selection:bg-emerald-200">
-      
-      {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col w-64 bg-emerald-900 text-stone-100 shadow-xl z-10">
-        <div className="p-6 pb-2">
-          <h1 className="text-2xl font-extrabold tracking-wider flex items-center text-white">
-            <Tent className="w-7 h-7 mr-2 text-emerald-400" />
-            幻營旅團
-          </h1>
-          <p className="text-emerald-400/80 text-sm mt-1">輕鬆規劃您的露營旅程</p>
-        </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 ${
-                activeTab === item.id 
-                  ? 'bg-emerald-800 text-white shadow-inner font-semibold' 
-                  : 'text-emerald-100/70 hover:bg-emerald-800/50 hover:text-white'
-              }`}
-            >
-              <span className={`mr-3 ${activeTab === item.id ? 'text-emerald-400' : ''}`}>
-                {item.icon}
-              </span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-emerald-900 text-white p-4 shadow-md flex items-center justify-center sticky top-0 z-20">
-          <Tent className="w-5 h-5 mr-2 text-emerald-400" />
-          <h1 className="font-bold tracking-wide">幻營旅團</h1>
-        </div>
-
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-stone-100 relative">
-          {renderTabContent()}
-        </main>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="md:hidden fixed bottom-0 w-full bg-white border-t border-stone-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 pb-safe">
-          <div className="flex justify-around items-center px-2 py-2">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex flex-col items-center p-2 min-w-[60px] transition-colors rounded-lg ${
-                  activeTab === item.id 
-                    ? 'text-emerald-700' 
-                    : 'text-stone-400 hover:text-stone-600'
-                }`}
-              >
-                <div className={`mb-1 transition-transform duration-200 ${activeTab === item.id ? 'scale-110' : ''}`}>
-                  {item.icon}
-                </div>
-                <span className={`text-[10px] font-medium ${activeTab === item.id ? 'font-bold' : ''}`}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      
-    </div>
-  );
-}
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
