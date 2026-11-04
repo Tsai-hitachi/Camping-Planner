@@ -696,11 +696,52 @@
       if (lbl) lbl.classList.toggle('checked', checked);
     }
 
-    // 初始化網頁
-    window.addEventListener('DOMContentLoaded', () => {
-      renderMenu();
-      renderChecklist();
-    });
+// === Google 試算表同步設定 ===
+  // 請將引號內的文字換成您在 Apps Script「部署」取得的網址 (https://script.google.com/macros/s/.../exec)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZGptoWSNF4kHWkwDlaKM8gC6HCXHABi-1RwS5h4RFAg52IkhhGtk5jIfxL2ibobLMHQ/exec";
+
+  let cloudData = {};
+
+  // 覆寫存檔功能：同時更新本地與 Google Sheet
+  function saveVal(key, val) {
+    cloudData[key] = val;
+    localStorage.setItem('camp_' + key, val);
+    
+    if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: key, value: val })
+      }).catch(err => console.error("同步失敗:", err));
+    }
+  }
+
+  // 覆寫取值功能：優先從雲端資料讀取
+  function getVal(key) {
+    if (cloudData[key] !== undefined) return cloudData[key];
+    return localStorage.getItem('camp_' + key) || '';
+  }
+
+  // 初始化網頁：載入時自動向 Google Sheet 抓取最新共編成員的資料
+  window.addEventListener('DOMContentLoaded', async () => {
+    // 1. 先用本機暫存快速載入畫面
+    renderMenu();
+    renderChecklist();
+
+    // 2. 向 Google Sheet 請求最新線上資料
+    if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
+      try {
+        const res = await fetch(SCRIPT_URL);
+        cloudData = await res.json();
+        // 抓到最新資料後重新整理畫面上的文字與勾選
+        renderMenu();
+        renderChecklist();
+      } catch (e) {
+        console.warn("無法取得 Google Sheet 資料，目前以本機資料顯示");
+      }
+    }
+  });
   </script>
 </body>
 </html>
