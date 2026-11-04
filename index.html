@@ -360,20 +360,7 @@
             <input type="number" id="people-count-input" class="input-field" style="width: 75px; text-align: center; font-weight: 700;" min="1" value="8" onchange="updatePeopleCount(this.value)">
           </div>
         </div>
-        <div class="grid-2">
-          <div class="card">
-            <h3 style="font-weight: 800; margin-bottom: 0.75rem; border-bottom: 1px solid var(--stone-200); padding-bottom: 0.5rem;">⛺ 第一帳</h3>
-            <div style="margin-bottom: 0.75rem;">
-              <strong style="color: #b45309; font-size: 0.9rem;">麵包夫妻</strong>
-              <div style="font-size: 0.85rem; margin-top: 0.25rem;">• 麵包</div>
-              <div style="font-size: 0.85rem;">• 凱文</div>
-            </div>
-            <div>
-              <strong style="color: #047857; font-size: 0.9rem;">昱夫妻</strong>
-              <div style="font-size: 0.85rem; margin-top: 0.25rem;">• 昱</div>
-              <div style="font-size: 0.85rem;">• 軒</div>
-            </div>
-          </div>
+        <div id="partners-container" class="grid-2"></div>
 
           <div class="card">
             <h3 style="font-weight: 800; margin-bottom: 0.75rem; border-bottom: 1px solid var(--stone-200); padding-bottom: 0.5rem;">⛺ 第二帳</h3>
@@ -703,7 +690,89 @@
       const lbl = document.getElementById('lbl_' + id);
       if (lbl) lbl.classList.toggle('checked', checked);
     }
+// === 預設夥伴分組清單 ===
+    const DEFAULT_PARTNERS_DATA = [
+      {
+        tentName: '⛺ 第一帳',
+        groups: [
+          { groupName: '麵包夫妻', color: '#b45309', members: ['麵包', '凱文'] },
+          { groupName: '昱夫妻', color: '#047857', members: ['昱', '軒'] }
+        ]
+      },
+      {
+        tentName: '⛺ 第二帳',
+        groups: [
+          { groupName: 'E慈夫妻', color: '#b91c1c', members: ['E慈', '維哲'] },
+          { groupName: 'ㄩˋㄩˊ', color: '#1d4ed8', members: ['毓', '魚'] }
+        ]
+      }
+    ];
 
+    function getPartnersData() {
+      const raw = getVal('partners_data');
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_PARTNERS_DATA));
+    }
+
+    function savePartnersData(data) {
+      saveVal('partners_data', JSON.stringify(data));
+      renderPartners();
+    }
+
+    function updateGroupName(tIdx, gIdx, val) {
+      const data = getPartnersData();
+      data[tIdx].groups[gIdx].groupName = val;
+      savePartnersData(data);
+    }
+
+    function updateMemberName(tIdx, gIdx, mIdx, val) {
+      const data = getPartnersData();
+      data[tIdx].groups[gIdx].members[mIdx] = val;
+      savePartnersData(data);
+    }
+
+    function addMember(tIdx, gIdx) {
+      const data = getPartnersData();
+      data[tIdx].groups[gIdx].members.push('新夥伴');
+      savePartnersData(data);
+    }
+
+    function removeMember(tIdx, gIdx, mIdx) {
+      const data = getPartnersData();
+      data[tIdx].groups[gIdx].members.splice(mIdx, 1);
+      savePartnersData(data);
+    }
+
+    function renderPartners() {
+      const container = document.getElementById('partners-container');
+      if (!container) return;
+      const data = getPartnersData();
+
+      container.innerHTML = data.map((tent, tIdx) => `
+        <div class="card">
+          <h3 style="font-weight: 800; margin-bottom: 0.75rem; border-bottom: 1px solid var(--stone-200); padding-bottom: 0.5rem;">${tent.tentName}</h3>
+          ${tent.groups.map((group, gIdx) => `
+            <div style="margin-bottom: 1rem;">
+              <input type="text" class="input-field" style="color: ${group.color}; font-weight: 800; font-size: 0.9rem; margin-bottom: 0.4rem; border-color: transparent; background: var(--stone-50); padding: 0.25rem 0.5rem;" value="${group.groupName}" onchange="updateGroupName(${tIdx}, ${gIdx}, this.value)" title="點擊修改組別名稱">
+              <div style="display: flex; flex-direction: column; gap: 0.35rem; padding-left: 0.25rem;">
+                ${group.members.map((member, mIdx) => `
+                  <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="color: var(--stone-500); font-weight: bold;">•</span>
+                    <input type="text" class="input-field" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;" value="${member}" onchange="updateMemberName(${tIdx}, ${gIdx}, ${mIdx}, this.value)">
+                    <button onclick="removeMember(${tIdx}, ${gIdx}, ${mIdx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding: 0 0.25rem;" title="刪除此人">✕</button>
+                  </div>
+                `).join('')}
+                <button onclick="addMember(${tIdx}, ${gIdx})" style="align-self: flex-start; margin-top: 0.2rem; border: 1px dashed var(--stone-300); background: none; color: var(--stone-500); font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 0.4rem; cursor: pointer; font-weight: 600;">
+                  ＋ 新增人名
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
 // === 預設租借設備清單 ===
     const DEFAULT_RENTAL_ITEMS = [
       { name: '6-8人帳', qty: 2, price: 1200 },
@@ -859,6 +928,7 @@
       renderMenu();
       renderChecklist();
       renderRental();
+      renderPartners();
 
       // 2. 向 Google Sheet 請求最新線上資料
       if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
@@ -869,6 +939,7 @@
           renderMenu();
           renderChecklist();
           renderRental();
+          renderPartners();
         } catch (e) {
           console.warn("無法取得 Google Sheet 資料，目前以本機資料顯示");
         }
