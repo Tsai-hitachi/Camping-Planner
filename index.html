@@ -331,12 +331,12 @@
           </div>
 
           <div class="cost-box">
-            <strong>🪙 費用試算（皆以 8 人計算）</strong><br>
-            • 設備租借（露海空基本配備）：NT$ 1,043 / 人<br>
-            • VIP 區營位費用：總計 NT$ 2,652，約 NT$ 332 / 人
+            <strong>🪙 費用試算（皆以 <span id="info-people-count">8</span> 人計算）</strong><br>
+            • 設備租借（露海空基本配備）：NT$ <span id="info-rental-avg">1,049</span> / 人<br>
+            • VIP 區營位費用：總計 NT$ 2,652，約 NT$ <span id="info-site-avg">332</span> / 人
             <div class="cost-total">
               <span>每人平均 TOTAL</span>
-              <span>NT$ 1,375</span>
+              <span>NT$ <span id="info-total-avg">1,381</span></span>
             </div>
           </div>
 
@@ -353,6 +353,13 @@
       <!-- 2. 夥伴資訊 -->
       <section id="tab-partners" class="tab-pane" style="display:none;">
         <h2 class="section-title">👥 帳篷分組與夥伴</h2>
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem;">
+          <span style="font-weight: 800; font-size: 0.95rem;">🧮 露營總人數（用於計算營位與設備均分）</span>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="people-count-input" style="font-size: 0.85rem; font-weight: 700; color: var(--stone-500);">人數：</label>
+            <input type="number" id="people-count-input" class="input-field" style="width: 75px; text-align: center; font-weight: 700;" min="1" value="8" onchange="updatePeopleCount(this.value)">
+          </div>
+        </div>
         <div class="grid-2">
           <div class="card">
             <h3 style="font-weight: 800; margin-bottom: 0.75rem; border-bottom: 1px solid var(--stone-200); padding-bottom: 0.5rem;">⛺ 第一帳</h3>
@@ -388,12 +395,15 @@
       <section id="tab-rental" class="tab-pane" style="display:none;">
         <h2 class="section-title">⛺ 設備租借資訊</h2>
         <div class="card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <div>
               <h3 style="font-weight: 800;">租借店家：露海空</h3>
-              <p style="font-size: 0.75rem; color: var(--stone-500);">領取與歸還注意事項請依照店家指示</p>
+              <p style="font-size: 0.75rem; color: var(--stone-500);">領取與歸還注意事項請依照店家指示（充氣床墊均分以「加總 ÷ 數量2倍」計算）</p>
             </div>
-            <a href="https://luhaikong.com.tw/contents-2-3.html" target="_blank" style="font-size: 0.8rem; background: var(--primary-light); color: var(--primary-dark); padding: 0.35rem 0.65rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">店家官網 ↗</a>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="https://luhaikong.com.tw/contents-2-3.html" target="_blank" style="font-size: 0.8rem; background: var(--primary-light); color: var(--primary-dark); padding: 0.35rem 0.65rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">店家官網 ↗</a>
+              <a href="https://mapsbooking.ezpretty.com.tw/ezpretty/aio#/4bd5898dcfb887352879e5caead18561?ReserveWithGoogle=1&rwg_token=AFd1xnEgeE5I-kzrV_oRu8NIKBYLdX-vv1h5AlGGdqTZAQ6WsVxpQftN3FkG8P25msK4W7omAl7HzP4O-x8viZHRgDLmZJGwCQ%3D%3D" target="_blank" style="font-size: 0.8rem; background: var(--primary); color: white; padding: 0.35rem 0.65rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">查看設備 ↗</a>
+            </div>
           </div>
 
           <div class="table-container">
@@ -401,30 +411,28 @@
               <thead>
                 <tr>
                   <th>品項</th>
-                  <th class="text-center">數量</th>
-                  <th class="text-right">單價</th>
-                  <th class="text-right">加總</th>
-                  <th class="text-right">均分/人</th>
+                  <th class="text-center" style="width: 85px;">數量</th>
+                  <th class="text-right" style="width: 105px;">單價</th>
+                  <th class="text-right" style="width: 95px;">加總</th>
+                  <th class="text-right" style="width: 95px;">均分/人</th>
+                  <th class="text-center" style="width: 50px;">刪除</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr><td>6-8人帳</td><td class="text-center">2</td><td class="text-right">$1200</td><td class="text-right">$2400</td><td class="text-right">$300</td></tr>
-                <tr><td>充氣床墊雙人</td><td class="text-center">3</td><td class="text-right">$800</td><td class="text-right">$2400</td><td class="text-right">$400</td></tr>
-                <tr><td>蛋捲桌</td><td class="text-center">2</td><td class="text-right">$200</td><td class="text-right">$400</td><td class="text-right">$50</td></tr>
-                <tr><td>動力線</td><td class="text-center">2</td><td class="text-right">$100</td><td class="text-right">$200</td><td class="text-right">$25</td></tr>
-                <tr><td>燈條</td><td class="text-center">2</td><td class="text-right">$280</td><td class="text-right">$560</td><td class="text-right">$70</td></tr>
-                <tr><td>客廳帳</td><td class="text-center">1</td><td class="text-right">$680</td><td class="text-right">$680</td><td class="text-right">$85</td></tr>
-                <tr><td>客廳帳圍布</td><td class="text-center">1</td><td class="text-right">$400</td><td class="text-right">$400</td><td class="text-right">$50</td></tr>
-                <tr><td>投影組</td><td class="text-center">1</td><td class="text-right">$500</td><td class="text-right">$500</td><td class="text-right">$63</td></tr>
-                <tr><td>營錘</td><td class="text-center">1</td><td class="text-right">$50</td><td class="text-right">$50</td><td class="text-right">$6</td></tr>
+              <tbody id="rental-tbody"></tbody>
+              <tfoot>
                 <tr style="font-weight: 800; background: var(--stone-50);">
-                  <td colspan="3">Total (8人計)</td>
-                  <td class="text-right">$7540</td>
-                  <td class="text-right" style="color: var(--primary-dark); font-size: 1rem;">$1049</td>
+                  <td colspan="3">Total (<span id="rental-people-label">8</span>人計)</td>
+                  <td class="text-right" id="rental-total-sum">$0</td>
+                  <td class="text-right" id="rental-avg-sum" style="color: var(--primary-dark); font-size: 1rem;">$0</td>
+                  <td></td>
                 </tr>
-              </tbody>
+              </tfoot>
             </table>
           </div>
+
+          <button onclick="addRentalRow()" style="margin-top: 0.75rem; background: var(--stone-100); border: 1px dashed var(--stone-300); color: var(--stone-700); width: 100%; padding: 0.5rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+            ＋ 新增設備項目
+          </button>
         </div>
       </section>
 
@@ -696,52 +704,176 @@
       if (lbl) lbl.classList.toggle('checked', checked);
     }
 
-// === Google 試算表同步設定 ===
-  // 請將引號內的文字換成您在 Apps Script「部署」取得的網址 (https://script.google.com/macros/s/.../exec)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZGptoWSNF4kHWkwDlaKM8gC6HCXHABi-1RwS5h4RFAg52IkhhGtk5jIfxL2ibobLMHQ/exec";
+// === 預設租借設備清單 ===
+    const DEFAULT_RENTAL_ITEMS = [
+      { name: '6-8人帳', qty: 2, price: 1200 },
+      { name: '充氣床墊雙人', qty: 3, price: 800 },
+      { name: '蛋捲桌', qty: 2, price: 200 },
+      { name: '動力線', qty: 2, price: 100 },
+      { name: '燈條', qty: 2, price: 280 },
+      { name: '客廳帳', qty: 1, price: 680 },
+      { name: '客廳帳圍布', qty: 1, price: 400 },
+      { name: '投影組', qty: 1, price: 500 },
+      { name: '營錘', qty: 1, price: 50 }
+    ];
 
-  let cloudData = {};
-
-  // 覆寫存檔功能：同時更新本地與 Google Sheet
-  function saveVal(key, val) {
-    cloudData[key] = val;
-    localStorage.setItem('camp_' + key, val);
-    
-    if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: key, value: val })
-      }).catch(err => console.error("同步失敗:", err));
+    function getPeopleCount() {
+      const val = parseInt(getVal('people_count'), 10);
+      return (!isNaN(val) && val > 0) ? val : 8;
     }
-  }
 
-  // 覆寫取值功能：優先從雲端資料讀取
-  function getVal(key) {
-    if (cloudData[key] !== undefined) return cloudData[key];
-    return localStorage.getItem('camp_' + key) || '';
-  }
+    function updatePeopleCount(val) {
+      const num = parseInt(val, 10);
+      const validNum = (!isNaN(num) && num > 0) ? num : 8;
+      saveVal('people_count', String(validNum));
+      renderRental();
+    }
 
-  // 初始化網頁：載入時自動向 Google Sheet 抓取最新共編成員的資料
-  window.addEventListener('DOMContentLoaded', async () => {
-    // 1. 先用本機暫存快速載入畫面
-    renderMenu();
-    renderChecklist();
+    function getRentalItems() {
+      const raw = getVal('rental_items');
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_RENTAL_ITEMS));
+    }
 
-    // 2. 向 Google Sheet 請求最新線上資料
-    if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
-      try {
-        const res = await fetch(SCRIPT_URL);
-        cloudData = await res.json();
-        // 抓到最新資料後重新整理畫面上的文字與勾選
-        renderMenu();
-        renderChecklist();
-      } catch (e) {
-        console.warn("無法取得 Google Sheet 資料，目前以本機資料顯示");
+    function saveRentalItems(items) {
+      saveVal('rental_items', JSON.stringify(items));
+      renderRental();
+    }
+
+    function updateRentalItem(idx, field, val) {
+      const items = getRentalItems();
+      if (!items[idx]) return;
+      items[idx][field] = (field === 'name') ? val : (parseFloat(val) || 0);
+      saveRentalItems(items);
+    }
+
+    function addRentalRow() {
+      const items = getRentalItems();
+      items.push({ name: '新設備', qty: 1, price: 0 });
+      saveRentalItems(items);
+    }
+
+    function removeRentalRow(idx) {
+      const items = getRentalItems();
+      items.splice(idx, 1);
+      saveRentalItems(items);
+    }
+
+    // 渲染設備租借表格與同步更新露營區資訊費用
+    function renderRental() {
+      const peopleCount = getPeopleCount();
+      const peopleInput = document.getElementById('people-count-input');
+      if (peopleInput) peopleInput.value = peopleCount;
+
+      const items = getRentalItems();
+      const tbody = document.getElementById('rental-tbody');
+      let totalSum = 0;
+      let avgSum = 0;
+
+      if (tbody) {
+        tbody.innerHTML = items.map((item, idx) => {
+          const qty = parseFloat(item.qty) || 0;
+          const price = parseFloat(item.price) || 0;
+          const total = Math.round(qty * price);
+
+          // 充氣床墊特殊公式：加總 ÷ (數量 * 2)；其餘品項：加總 ÷ 人數
+          let avg = 0;
+          if (item.name && item.name.includes('充氣床墊')) {
+            avg = qty > 0 ? Math.round(total / (qty * 2)) : 0;
+          } else {
+            avg = peopleCount > 0 ? Math.round(total / peopleCount) : 0;
+          }
+
+          totalSum += total;
+          avgSum += avg;
+
+          return `
+            <tr>
+              <td><input type="text" class="input-field" value="${item.name}" onchange="updateRentalItem(${idx}, 'name', this.value)"></td>
+              <td class="text-center"><input type="number" class="input-field text-center" value="${qty}" min="0" onchange="updateRentalItem(${idx}, 'qty', this.value)"></td>
+              <td class="text-right"><input type="number" class="input-field text-right" value="${price}" min="0" onchange="updateRentalItem(${idx}, 'price', this.value)"></td>
+              <td class="text-right" style="font-weight: 600;">$${total.toLocaleString()}</td>
+              <td class="text-right" style="font-weight: 700; color: var(--primary-dark);">$${avg.toLocaleString()}</td>
+              <td class="text-center">
+                <button onclick="removeRentalRow(${idx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:1rem;" title="刪除此列">✕</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 更新設備租借下方 Total
+      const rentalPeopleLabel = document.getElementById('rental-people-label');
+      const rentalTotalSum = document.getElementById('rental-total-sum');
+      const rentalAvgSum = document.getElementById('rental-avg-sum');
+      if (rentalPeopleLabel) rentalPeopleLabel.textContent = peopleCount;
+      if (rentalTotalSum) rentalTotalSum.textContent = '$' + totalSum.toLocaleString();
+      if (rentalAvgSum) rentalAvgSum.textContent = '$' + avgSum.toLocaleString();
+
+      // 連動更新「露營區資訊」的費用試算
+      const siteAvg = Math.round(2652 / peopleCount);
+      const totalAvg = avgSum + siteAvg;
+
+      const infoPeopleCount = document.getElementById('info-people-count');
+      const infoRentalAvg = document.getElementById('info-rental-avg');
+      const infoSiteAvg = document.getElementById('info-site-avg');
+      const infoTotalAvg = document.getElementById('info-total-avg');
+
+      if (infoPeopleCount) infoPeopleCount.textContent = peopleCount;
+      if (infoRentalAvg) infoRentalAvg.textContent = avgSum.toLocaleString();
+      if (infoSiteAvg) infoSiteAvg.textContent = siteAvg.toLocaleString();
+      if (infoTotalAvg) infoTotalAvg.textContent = totalAvg.toLocaleString();
+    }
+
+    // === Google 試算表同步設定 ===
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZGptoWSNF4kHWkwDlaKM8gC6HCXHABi-1RwS5h4RFAg52IkhhGtk5jIfxL2ibobLMHQ/exec";
+
+    let cloudData = {};
+
+    // 覆寫存檔功能：同時更新本地與 Google Sheet
+    function saveVal(key, val) {
+      cloudData[key] = val;
+      localStorage.setItem('camp_' + key, val);
+      
+      if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
+        fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: key, value: val })
+        }).catch(err => console.error("同步失敗:", err));
       }
     }
-  });
+
+    // 覆寫取值功能：優先從雲端資料讀取
+    function getVal(key) {
+      if (cloudData[key] !== undefined) return cloudData[key];
+      return localStorage.getItem('camp_' + key) || '';
+    }
+
+    // 初始化網頁：載入時自動向 Google Sheet 抓取最新共編成員的資料
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 1. 先用本機暫存快速載入畫面
+      renderMenu();
+      renderChecklist();
+      renderRental();
+
+      // 2. 向 Google Sheet 請求最新線上資料
+      if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
+        try {
+          const res = await fetch(SCRIPT_URL);
+          cloudData = await res.json();
+          // 抓到最新資料後重新整理畫面上的文字與勾選
+          renderMenu();
+          renderChecklist();
+          renderRental();
+        } catch (e) {
+          console.warn("無法取得 Google Sheet 資料，目前以本機資料顯示");
+        }
+      }
+    });
   </script>
 </body>
 </html>
