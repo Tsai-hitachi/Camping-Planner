@@ -634,14 +634,14 @@
           contentHtml = meal.items.map((dish, i) => `
             <div style="margin-bottom:0.75rem; background:var(--stone-50); padding:0.65rem; border-radius:0.5rem; border:1px solid var(--stone-200);">
               <div style="font-weight:700; font-size:0.85rem; color:var(--primary-dark); margin-bottom:0.25rem;">${dish}</div>
-              <input type="text" class="input-field" placeholder="填寫食材或備註..." value="${getVal(meal.id + '_' + i)}" oninput="saveVal('${meal.id}_${i}', this.value)">
+              <input type="text" class="input-field" placeholder="填寫食材或備註..." value="${getVal(meal.id + '_' + i)}" onchange="saveVal('${meal.id}_${i}', this.value)">
             </div>
           `).join('');
         } else {
           contentHtml = `<div class="grid-2">` + meal.fields.map(field => `
             <div style="margin-bottom:0.5rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--stone-500); display:block; margin-bottom:0.2rem;">${field}</label>
-              <input type="text" class="input-field" placeholder="填寫${field}..." value="${getVal(meal.id + '_' + field)}" oninput="saveVal('${meal.id}_${field}', this.value)">
+              <input type="text" class="input-field" placeholder="填寫${field}..." value="${getVal(meal.id + '_' + field)}" onchange="saveVal('${meal.id}_${field}', this.value)">
             </div>
           `).join('') + `</div>`;
         }
@@ -672,7 +672,7 @@
                 <span>${item.name}</span>
               </label>
               <div class="check-remark">
-                <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" oninput="saveVal('rem_${item.id}', this.value)">
+                <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
               </div>
             </div>
           `;
