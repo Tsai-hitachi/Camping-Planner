@@ -204,11 +204,12 @@
       border-collapse: collapse;
       text-align: left;
       font-size: 0.85rem;
-      min-width: 480px;
+      min-width: 580px;
     }
     th, td {
       padding: 0.65rem 0.85rem;
       border-bottom: 1px solid var(--stone-200);
+      vertical-align: middle;
     }
     th { background: var(--stone-100); color: var(--stone-500); font-weight: 700; }
     .text-right { text-align: right; }
@@ -321,7 +322,7 @@
           </h3>
           <div class="info-row"><span class="info-label">📅 時間：</span><span>2026/11/21 ~ 2026/11/22</span></div>
           <div class="info-row"><span class="info-label">📍 地址：</span><span>546 南投縣仁愛鄉春陽村</span></div>
-          <div class="info-row"><span class="info-label">📞 電話：</span><span>0939 646 963 (在營區內有事聯絡請打0911 570 827找營主媽媽)</span></div>
+          <div class="info-row"><span class="info-label">📞 電話：</span><span>請見Notion</span></div>
           <div class="info-row"><span class="info-label">🚗 停車：</span><span>一個晚上酌收 200 元費用</span></div>
           <div class="info-row"><span class="info-label">🧊 設備：</span><span>VIP區配有獨立冰箱</span></div>
           
@@ -382,12 +383,12 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width: 130px;">品項</th>
-                  <th class="text-center" style="width: 85px;">數量</th>
-                  <th class="text-right" style="width: 105px;">單價</th>
-                  <th class="text-right" style="width: 95px;">加總</th>
-                  <th class="text-right" style="width: 95px;">均分/人</th>
-                  <th class="text-center" style="width: 50px;">刪除</th>
+                  <th style="min-width: 140px;">品項</th>
+                  <th class="text-center" style="width: 80px; min-width: 80px;">數量</th>
+                  <th class="text-right" style="width: 95px; min-width: 95px;">單價</th>
+                  <th class="text-right" style="width: 90px; min-width: 90px;">加總</th>
+                  <th class="text-right" style="width: 90px; min-width: 90px;">均分/人</th>
+                  <th class="text-center" style="width: 50px; min-width: 50px;">刪除</th>
                 </tr>
               </thead>
               <tbody id="rental-tbody"></tbody>
@@ -411,7 +412,7 @@
       <!-- 4. 飲食清單 -->
       <section id="tab-menu" class="tab-pane" style="display:none;">
         <h2 class="section-title">🍲 飲食清單</h2>
-        <p style="font-size: 0.8rem; color: var(--stone-500); margin-bottom: 1rem;">點擊各菜餚展開填寫食材，填寫內容會自動儲存。</p>
+        <p style="font-size: 0.8rem; color: var(--stone-500); margin-bottom: 1rem;">點擊各菜餚展開填寫食材，填寫內容會自動儲存在雲端 Google 試算表中。</p>
         
         <div id="menu-container"></div>
       </section>
@@ -437,7 +438,7 @@
   </div>
 
   <script>
-    // === 預設飲食清單與動態管理 ===
+    // === 預設飲食清單資料結構 ===
     const DEFAULT_MENU_DATA = [
       {
         id: 'banquet',
@@ -457,7 +458,7 @@
       { id: 'taco', title: '墨西哥捲餅(有酪梨+番茄+香菜的那種)', type: 'fields', fields: ['食材', '調味料', '其他'] },
       { id: 'okonomiyaki', title: '大阪燒', type: 'fields', fields: ['食材', '調味料', '其他'] },
       { id: 'oden', title: '關東煮', type: 'fields', fields: ['食材', '調味料', '其他'] },
-      { id: 'drinks', title: '酒水', type: 'fields', fields: ['項目'] }
+      { id: 'drinks', title: '酒水', type: 'fields', fields: ['食材', '調味料', '其他'] }
     ];
 
     function getMenuData() {
@@ -483,13 +484,11 @@
 
     function addMenuCategory() {
       const data = getMenuData();
-      const newId = 'custom_' + Date.now();
       data.push({
-        id: newId,
+        id: 'custom_' + Date.now(),
         title: '新菜色項目',
         type: 'fields',
-        fields: ['食材', '調味料', '其他'],
-        isCustom: true // 標記為自訂項目，允許修改標題與刪除
+        fields: ['食材', '調味料', '其他']
       });
       saveMenuData(data);
     }
@@ -500,7 +499,7 @@
       saveMenuData(data);
     }
 
-    // Check list 分類與項目
+    // === Check list 分類與完整項目 ===
     const CHECKLIST_DATA = [
       {
         id: 'c1', title: '📝 準備工作',
@@ -637,14 +636,6 @@
       btn.querySelector('.accordion-indicator').textContent = isOpen ? '▲ 收合' : '▼ 展開';
     }
 
-    // 資料存取 (LocalStorage)
-    function saveVal(key, val) {
-      localStorage.setItem('camp_' + key, val);
-    }
-    function getVal(key) {
-      return localStorage.getItem('camp_' + key) || '';
-    }
-
     // 渲染飲食清單
     function renderMenu() {
       const container = document.getElementById('menu-container');
@@ -669,7 +660,7 @@
           `).join('') + `</div>`;
         }
 
-        // 除了「幻營辦桌大宴」以外，其他所有菜色項目都允許修改標題與刪除
+        // 除了「幻營辦桌大宴」外，其餘項目皆顯示標題修改與刪除按鈕
         const customHeader = meal.id !== 'banquet' ? `
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid var(--stone-200); gap: 0.5rem;">
             <input type="text" class="input-field" style="font-weight:700; font-size:0.9rem; flex:1;" value="${meal.title}" onchange="updateMenuTitle(${idx}, this.value)" placeholder="輸入菜名...">
@@ -691,7 +682,6 @@
         `;
       }).join('');
 
-      // 在清單最下方加入「新增菜色項目」按鈕
       html += `
         <button onclick="addMenuCategory()" style="margin-top: 0.5rem; background: var(--stone-100); border: 1px dashed var(--stone-300); color: var(--stone-700); width: 100%; padding: 0.65rem; border-radius: 0.75rem; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
           ＋ 新增菜色項目
@@ -699,6 +689,45 @@
       `;
 
       container.innerHTML = html;
+    }
+
+    // 渲染 Check list
+    function renderChecklist() {
+      const container = document.getElementById('checklist-container');
+      if (!container) return;
+      container.innerHTML = CHECKLIST_DATA.map(cat => {
+        const itemsHtml = cat.items.map(item => {
+          const isChecked = getVal('chk_' + item.id) === '1';
+          const remarkVal = getVal('rem_' + item.id);
+          return `
+            <div class="check-item">
+              <label class="check-label ${isChecked ? 'checked' : ''}" id="lbl_${item.id}">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
+                <span>${item.name}</span>
+              </label>
+              <div class="check-remark">
+                <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="accordion">
+            <button class="accordion-header" onclick="toggleAccordion(this)">
+              <span>${cat.title}</span>
+              <span class="accordion-indicator">▼ 展開</span>
+            </button>
+            <div class="accordion-body">${itemsHtml}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleCheck(id, checked) {
+      saveVal('chk_' + id, checked ? '1' : '0');
+      const lbl = document.getElementById('lbl_' + id);
+      if (lbl) lbl.classList.toggle('checked', checked);
     }
 
     // === 預設夥伴分組清單 ===
@@ -872,12 +901,12 @@
 
           return `
             <tr>
-              <td><input type="text" class="input-field" value="${item.name}" onchange="updateRentalItem(${idx}, 'name', this.value)"></td>
-              <td class="text-center"><input type="number" class="input-field text-center" value="${qty}" min="0" onchange="updateRentalItem(${idx}, 'qty', this.value)"></td>
-              <td class="text-right"><input type="number" class="input-field text-right" value="${price}" min="0" onchange="updateRentalItem(${idx}, 'price', this.value)"></td>
-              <td class="text-right" style="font-weight: 600;">$${total.toLocaleString()}</td>
-              <td class="text-right" style="font-weight: 700; color: var(--primary-dark);">$${avg.toLocaleString()}</td>
-              <td class="text-center">
+              <td style="min-width: 140px;"><input type="text" class="input-field" value="${item.name}" onchange="updateRentalItem(${idx}, 'name', this.value)"></td>
+              <td class="text-center" style="width: 80px; min-width: 80px;"><input type="number" class="input-field text-center" value="${qty}" min="0" onchange="updateRentalItem(${idx}, 'qty', this.value)"></td>
+              <td class="text-right" style="width: 95px; min-width: 95px;"><input type="number" class="input-field text-right" value="${price}" min="0" onchange="updateRentalItem(${idx}, 'price', this.value)"></td>
+              <td class="text-right" style="width: 90px; min-width: 90px; font-weight: 600;">$${total.toLocaleString()}</td>
+              <td class="text-right" style="width: 90px; min-width: 90px; font-weight: 700; color: var(--primary-dark);">$${avg.toLocaleString()}</td>
+              <td class="text-center" style="width: 50px; min-width: 50px;">
                 <button onclick="removeRentalRow(${idx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:1rem;" title="刪除此列">✕</button>
               </td>
             </tr>
@@ -913,7 +942,6 @@
 
     let cloudData = {};
 
-    // 覆寫存檔功能：同時更新本地與 Google Sheet
     function saveVal(key, val) {
       cloudData[key] = val;
       localStorage.setItem('camp_' + key, val);
@@ -928,7 +956,6 @@
       }
     }
 
-    // 覆寫取值功能：優先從雲端資料讀取
     function getVal(key) {
       if (cloudData[key] !== undefined) return cloudData[key];
       return localStorage.getItem('camp_' + key) || '';
@@ -936,18 +963,17 @@
 
     // 初始化網頁：載入時自動向 Google Sheet 抓取最新共編成員的資料
     window.addEventListener('DOMContentLoaded', async () => {
-      // 1. 先用本機暫存快速載入畫面
-      renderMenu();
-      renderChecklist();
-      renderRental();
-      renderPartners();
+      // 1. 先用本地或預設資料載入畫面
+      try { renderMenu(); } catch (e) { console.error(e); }
+      try { renderChecklist(); } catch (e) { console.error(e); }
+      try { renderRental(); } catch (e) { console.error(e); }
+      try { renderPartners(); } catch (e) { console.error(e); }
 
       // 2. 向 Google Sheet 請求最新線上資料
       if (SCRIPT_URL && !SCRIPT_URL.includes("貼在這裡")) {
         try {
           const res = await fetch(SCRIPT_URL);
           cloudData = await res.json();
-          // 抓到最新資料後重新整理畫面上的文字與勾選
           renderMenu();
           renderChecklist();
           renderRental();
