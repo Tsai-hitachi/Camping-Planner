@@ -499,8 +499,8 @@
       saveMenuData(data);
     }
 
-    // === Check list 分類與完整項目 ===
-    const CHECKLIST_DATA = [
+    // === Check list 分類與預設項目 ===
+    const DEFAULT_CHECKLIST_DATA = [
       {
         id: 'c1', title: '📝 準備工作',
         items: [ { id: 'c1_1', name: '訂營位' }, { id: 'c1_2', name: '租露營設備' }, { id: 'c1_3', name: '食材採買' } ]
@@ -612,101 +612,62 @@
       }
     ];
 
-    // 切換分頁邏輯
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
-      const target = document.getElementById('tab-' + tabId);
-      if (target) target.style.display = 'block';
-
-      // 側邊欄按鈕高亮
-      document.querySelectorAll('.sidebar .nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
-      });
-      // 手機底部按鈕高亮
-      document.querySelectorAll('.bottom-nav .bottom-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
-      });
-      window.scrollTo(0, 0);
+    function getChecklistData() {
+      const raw = getVal('checklist_data');
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_DATA));
     }
 
-    // 展開 / 收合
-    function toggleAccordion(btn) {
-      const parent = btn.parentElement;
-      const isOpen = parent.classList.toggle('open');
-      btn.querySelector('.accordion-indicator').textContent = isOpen ? '▲ 收合' : '▼ 展開';
+    function saveChecklistData(data) {
+      saveVal('checklist_data', JSON.stringify(data));
+      renderChecklist();
     }
 
-    // 渲染飲食清單
-    function renderMenu() {
-      const container = document.getElementById('menu-container');
-      if (!container) return;
-      const menuData = getMenuData();
+    function addChecklistItem(catIdx) {
+      const data = getChecklistData();
+      if (!data[catIdx]) return;
+      const newItemId = 'chk_item_' + Date.now();
+      data[catIdx].items.push({ id: newItemId, name: '新項目' });
+      saveChecklistData(data);
+    }
 
-      let html = menuData.map((meal, idx) => {
-        let contentHtml = '';
-        if (meal.type === 'list') {
-          contentHtml = meal.items.map((dish, i) => `
-            <div style="margin-bottom:0.75rem; background:var(--stone-50); padding:0.65rem; border-radius:0.5rem; border:1px solid var(--stone-200);">
-              <div style="font-weight:700; font-size:0.85rem; color:var(--primary-dark); margin-bottom:0.25rem;">${dish}</div>
-              <input type="text" class="input-field" placeholder="填寫食材或備註..." value="${getVal(meal.id + '_' + i)}" onchange="saveVal('${meal.id}_${i}', this.value)">
-            </div>
-          `).join('');
-        } else {
-          contentHtml = `<div class="grid-2">` + meal.fields.map(field => `
-            <div style="margin-bottom:0.5rem;">
-              <label style="font-size:0.75rem; font-weight:700; color:var(--stone-500); display:block; margin-bottom:0.2rem;">${field}</label>
-              <input type="text" class="input-field" placeholder="填寫${field}..." value="${getVal(meal.id + '_' + field)}" onchange="saveVal('${meal.id}_${field}', this.value)">
-            </div>
-          `).join('') + `</div>`;
-        }
+    function removeChecklistItem(catIdx, itemIdx) {
+      const data = getChecklistData();
+      if (!data[catIdx]) return;
+      data[catIdx].items.splice(itemIdx, 1);
+      saveChecklistData(data);
+    }
 
-        // 除了「幻營辦桌大宴」外，其餘項目皆顯示標題修改與刪除按鈕
-        const customHeader = meal.id !== 'banquet' ? `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid var(--stone-200); gap: 0.5rem;">
-            <input type="text" class="input-field" style="font-weight:700; font-size:0.9rem; flex:1;" value="${meal.title}" onchange="updateMenuTitle(${idx}, this.value)" placeholder="輸入菜名...">
-            <button onclick="removeMenuCategory(${idx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-weight:bold; font-size:0.85rem; white-space:nowrap;" title="刪除此項目">刪除 ✕</button>
-          </div>
-        ` : '';
-
-        return `
-          <div class="accordion">
-            <button class="accordion-header" onclick="toggleAccordion(this)">
-              <span>${meal.title}</span>
-              <span class="accordion-indicator">▼ 展開</span>
-            </button>
-            <div class="accordion-body">
-              ${customHeader}
-              ${contentHtml}
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      html += `
-        <button onclick="addMenuCategory()" style="margin-top: 0.5rem; background: var(--stone-100); border: 1px dashed var(--stone-300); color: var(--stone-700); width: 100%; padding: 0.65rem; border-radius: 0.75rem; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
-          ＋ 新增菜色項目
-        </button>
-      `;
-
-      container.innerHTML = html;
+    function updateChecklistItemName(catIdx, itemIdx, val) {
+      const data = getChecklistData();
+      if (!data[catIdx] || !data[catIdx].items[itemIdx]) return;
+      data[catIdx].items[itemIdx].name = val;
+      saveChecklistData(data);
     }
 
     // 渲染 Check list
     function renderChecklist() {
       const container = document.getElementById('checklist-container');
       if (!container) return;
-      container.innerHTML = CHECKLIST_DATA.map(cat => {
-        const itemsHtml = cat.items.map(item => {
+      const checklistData = getChecklistData();
+
+      container.innerHTML = checklistData.map((cat, catIdx) => {
+        const itemsHtml = cat.items.map((item, itemIdx) => {
           const isChecked = getVal('chk_' + item.id) === '1';
           const remarkVal = getVal('rem_' + item.id);
           return `
-            <div class="check-item">
-              <label class="check-label ${isChecked ? 'checked' : ''}" id="lbl_${item.id}">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
-                <span>${item.name}</span>
-              </label>
-              <div class="check-remark">
-                <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
+            <div class="check-item" style="display:flex; align-items:center; gap:0.5rem; justify-content:space-between; flex-wrap:nowrap;">
+              <div style="display:flex; align-items:center; gap:0.4rem; flex:1; min-width:0;">
+                <input type="checkbox" style="width:1.15rem; height:1.15rem; cursor:pointer; flex-shrink:0;" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
+                <input type="text" class="input-field" style="border:none; background:transparent; font-weight:500; font-size:0.9rem; padding:0.2rem 0.4rem; ${isChecked ? 'text-decoration:line-through; color:var(--stone-500);' : ''}" value="${item.name}" onchange="updateChecklistItemName(${catIdx}, ${itemIdx}, this.value)" title="點擊修改項目名稱">
+              </div>
+              <div style="display:flex; align-items:center; gap:0.4rem; flex-shrink:0;">
+                <div class="check-remark" style="width:140px;">
+                  <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
+                </div>
+                <button onclick="removeChecklistItem(${catIdx}, ${itemIdx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:0.95rem; padding:0 0.25rem; font-weight:bold;" title="刪除此項目">✕</button>
               </div>
             </div>
           `;
@@ -718,7 +679,12 @@
               <span>${cat.title}</span>
               <span class="accordion-indicator">▼ 展開</span>
             </button>
-            <div class="accordion-body">${itemsHtml}</div>
+            <div class="accordion-body">
+              ${itemsHtml}
+              <button onclick="addChecklistItem(${catIdx})" style="margin-top:0.75rem; background:none; border:1px dashed var(--stone-300); color:var(--stone-500); width:100%; padding:0.4rem; border-radius:0.5rem; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                ＋ 新增裝備項目
+              </button>
+            </div>
           </div>
         `;
       }).join('');
@@ -726,8 +692,7 @@
 
     function toggleCheck(id, checked) {
       saveVal('chk_' + id, checked ? '1' : '0');
-      const lbl = document.getElementById('lbl_' + id);
-      if (lbl) lbl.classList.toggle('checked', checked);
+      renderChecklist();
     }
 
     // === 預設夥伴分組清單 ===
