@@ -437,8 +437,8 @@
   </div>
 
   <script>
-    // 菜單資料結構
-    const MENU_DATA = [
+    // === 預設飲食清單與動態管理 ===
+    const DEFAULT_MENU_DATA = [
       {
         id: 'banquet',
         title: '幻營辦桌大宴',
@@ -457,8 +457,48 @@
       { id: 'taco', title: '墨西哥捲餅(有酪梨+番茄+香菜的那種)', type: 'fields', fields: ['食材', '調味料', '其他'] },
       { id: 'okonomiyaki', title: '大阪燒', type: 'fields', fields: ['食材', '調味料', '其他'] },
       { id: 'oden', title: '關東煮', type: 'fields', fields: ['食材', '調味料', '其他'] },
-      { id: 'drinks', title: '酒水', type: 'fields', fields: ['項目'] },
+      { id: 'drinks', title: '酒水', type: 'fields', fields: ['項目'] }
     ];
+
+    function getMenuData() {
+      const raw = getVal('menu_data');
+      if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_MENU_DATA));
+    }
+
+    function saveMenuData(data) {
+      saveVal('menu_data', JSON.stringify(data));
+      renderMenu();
+    }
+
+    function updateMenuTitle(idx, val) {
+      const data = getMenuData();
+      if (data[idx]) {
+        data[idx].title = val;
+        saveMenuData(data);
+      }
+    }
+
+    function addMenuCategory() {
+      const data = getMenuData();
+      const newId = 'custom_' + Date.now();
+      data.push({
+        id: newId,
+        title: '新菜色項目',
+        type: 'fields',
+        fields: ['食材', '調味料', '其他'],
+        isCustom: true // 標記為自訂項目，允許修改標題與刪除
+      });
+      saveMenuData(data);
+    }
+
+    function removeMenuCategory(idx) {
+      const data = getMenuData();
+      data.splice(idx, 1);
+      saveMenuData(data);
+    }
 
     // Check list 分類與項目
     const CHECKLIST_DATA = [
@@ -608,7 +648,10 @@
     // 渲染飲食清單
     function renderMenu() {
       const container = document.getElementById('menu-container');
-      container.innerHTML = MENU_DATA.map(meal => {
+      if (!container) return;
+      const menuData = getMenuData();
+
+      let html = menuData.map((meal, idx) => {
         let contentHtml = '';
         if (meal.type === 'list') {
           contentHtml = meal.items.map((dish, i) => `
@@ -626,54 +669,36 @@
           `).join('') + `</div>`;
         }
 
+        // 如果是使用者自行新增的項目，在展開內部最上方提供「修改菜名」與「刪除」功能
+        const customHeader = meal.isCustom ? `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid var(--stone-200); gap: 0.5rem;">
+            <input type="text" class="input-field" style="font-weight:700; font-size:0.9rem; flex:1;" value="${meal.title}" onchange="updateMenuTitle(${idx}, this.value)" placeholder="輸入菜名...">
+            <button onclick="removeMenuCategory(${idx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-weight:bold; font-size:0.85rem; white-space:nowrap;" title="刪除此項目">刪除 ✕</button>
+          </div>
+        ` : '';
+
         return `
           <div class="accordion">
             <button class="accordion-header" onclick="toggleAccordion(this)">
               <span>${meal.title}</span>
               <span class="accordion-indicator">▼ 展開</span>
             </button>
-            <div class="accordion-body">${contentHtml}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // 渲染 Check list
-    function renderChecklist() {
-      const container = document.getElementById('checklist-container');
-      container.innerHTML = CHECKLIST_DATA.map(cat => {
-        const itemsHtml = cat.items.map(item => {
-          const isChecked = getVal('chk_' + item.id) === '1';
-          const remarkVal = getVal('rem_' + item.id);
-          return `
-            <div class="check-item">
-              <label class="check-label ${isChecked ? 'checked' : ''}" id="lbl_${item.id}">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
-                <span>${item.name}</span>
-              </label>
-              <div class="check-remark">
-                <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
-              </div>
+            <div class="accordion-body">
+              ${customHeader}
+              ${contentHtml}
             </div>
-          `;
-        }).join('');
-
-        return `
-          <div class="accordion">
-            <button class="accordion-header" onclick="toggleAccordion(this)">
-              <span>${cat.title}</span>
-              <span class="accordion-indicator">▼ 展開</span>
-            </button>
-            <div class="accordion-body">${itemsHtml}</div>
           </div>
         `;
       }).join('');
-    }
 
-    function toggleCheck(id, checked) {
-      saveVal('chk_' + id, checked ? '1' : '0');
-      const lbl = document.getElementById('lbl_' + id);
-      if (lbl) lbl.classList.toggle('checked', checked);
+      // 在清單最下方加入「新增菜色項目」按鈕
+      html += `
+        <button onclick="addMenuCategory()" style="margin-top: 0.5rem; background: var(--stone-100); border: 1px dashed var(--stone-300); color: var(--stone-700); width: 100%; padding: 0.65rem; border-radius: 0.75rem; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
+          ＋ 新增菜色項目
+        </button>
+      `;
+
+      container.innerHTML = html;
     }
 
     // === 預設夥伴分組清單 ===
