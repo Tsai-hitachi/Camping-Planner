@@ -737,16 +737,16 @@
           const isChecked = getVal('chk_' + item.id) === '1';
           const remarkVal = getVal('rem_' + item.id);
           return `
-            <div class="check-item" style="display:flex; align-items:center; gap:0.5rem; justify-content:space-between; flex-wrap:nowrap;">
-              <div style="display:flex; align-items:center; gap:0.4rem; flex:1; min-width:0;">
-                <input type="checkbox" style="width:1.15rem; height:1.15rem; cursor:pointer; flex-shrink:0;" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
-                <input type="text" id="txt_${item.id}" class="input-field" style="border:none; background:transparent; font-weight:500; font-size:0.9rem; padding:0.2rem 0.4rem; ${isChecked ? 'text-decoration:line-through; color:var(--stone-500);' : ''}" value="${item.name}" onchange="updateChecklistItemName(${catIdx}, ${itemIdx}, this.value)" title="點擊修改項目名稱">
+            <div class="check-item" style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:0.75rem; padding:0.75rem 0.25rem; border-bottom:1px solid var(--stone-100);">
+              <div style="display:flex; align-items:center; gap:0.6rem; flex:1; min-width:0;">
+                <input type="checkbox" style="width:1.3rem; height:1.3rem; cursor:pointer; flex-shrink:0;" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${item.id}', this.checked)">
+                <input type="text" id="txt_${item.id}" class="input-field" style="border:none; background:transparent; font-weight:600; font-size:0.95rem; padding:0.35rem 0.4rem; width:100%; outline:none; ${isChecked ? 'text-decoration:line-through; color:var(--stone-500);' : ''}" value="${item.name}" onchange="updateChecklistItemName(${catIdx}, ${itemIdx}, this.value)" title="點擊修改項目名稱">
               </div>
-              <div style="display:flex; align-items:center; gap:0.4rem; flex-shrink:0;">
-                <div class="check-remark" style="width:130px;">
-                  <input type="text" class="input-field" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
+              <div style="display:flex; align-items:center; gap:0.5rem; flex:1.2; max-width:320px; justify-content:flex-end;">
+                <div style="flex:1; min-width:140px;">
+                  <input type="text" class="input-field" style="padding:0.45rem 0.65rem; font-size:0.88rem; width:100%; border-radius:0.6rem;" placeholder="備註..." value="${remarkVal}" onchange="saveVal('rem_${item.id}', this.value)">
                 </div>
-                <button onclick="removeChecklistItem(${catIdx}, ${itemIdx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:0.95rem; padding:0 0.25rem; font-weight:bold;" title="刪除此項目">✕</button>
+                <button onclick="removeChecklistItem(${catIdx}, ${itemIdx})" style="border:none; background:none; color:#ef4444; cursor:pointer; font-size:1.1rem; padding:0.25rem 0.4rem; font-weight:bold; flex-shrink:0;" title="刪除此項目">✕</button>
               </div>
             </div>
           `;
