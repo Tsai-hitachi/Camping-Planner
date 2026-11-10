@@ -734,7 +734,7 @@
       const checklistData = getChecklistData();
       container.innerHTML = checklistData.map((cat, catIdx) => {
         const itemsHtml = cat.items.map((item, itemIdx) => {
-          const isChecked = getVal('chk_' + item.id) === '1';
+          const isChecked = localStorage.getItem('camp_chk_' + item.id) === '1';
           const remarkVal = getVal('rem_' + item.id);
           return `
             <div class="check-item" style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:0.75rem; padding:0.75rem 0.25rem; border-bottom:1px solid var(--stone-100);">
@@ -771,7 +771,7 @@
     }
 
     function toggleCheck(id, checked) {
-      saveVal('chk_' + id, checked ? '1' : '0');
+      localStorage.setItem('camp_chk_' + id, checked ? '1' : '0');
       const txt = document.getElementById('txt_' + id);
       if (txt) {
         if (checked) {
